@@ -24,6 +24,8 @@ export default function TenantDetail() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm] = Form.useForm();
 
   const fetchAll = () => {
     setLoading(true);
@@ -75,6 +77,23 @@ export default function TenantDetail() {
       message.success('已刪除');
       fetchAll();
     } catch { message.error('刪除失敗'); }
+  };
+
+  const openEditUser = (u: User) => {
+    setEditUser(u);
+    editForm.setFieldsValue({ name: u.name, role: u.role, is_active: u.is_active, password: '' });
+  };
+
+  const handleEditUser = async (values: { name: string; role: string; is_active: boolean; password: string }) => {
+    if (!editUser) return;
+    try {
+      const payload: Record<string, unknown> = { name: values.name, role: values.role, is_active: values.is_active };
+      if (values.password) payload.password = values.password;
+      await api.put('/admin/tenants/' + id + '/users/' + editUser.id, payload);
+      message.success('已更新');
+      setEditUser(null);
+      fetchAll();
+    } catch { message.error('更新失敗'); }
   };
 
   if (loading) return <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
@@ -140,9 +159,12 @@ export default function TenantDetail() {
                 { title: '最後登入', dataIndex: 'last_login', render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-' },
                 {
                   title: '操作', render: (_, record) => (
-                    <Popconfirm title="確定刪除此使用者？" onConfirm={() => handleDeleteUser(record.id)}>
-                      <Button danger size="small">刪除</Button>
-                    </Popconfirm>
+                    <Space>
+                      <Button size="small" onClick={() => openEditUser(record)}>編輯</Button>
+                      <Popconfirm title="確定刪除此使用者？" onConfirm={() => handleDeleteUser(record.id)}>
+                        <Button danger size="small">刪除</Button>
+                      </Popconfirm>
+                    </Space>
                   ),
                 },
               ]} />
@@ -176,6 +198,26 @@ export default function TenantDetail() {
               { value: 'operator', label: '操作員' },
               { value: 'viewer', label: '檢視者' },
             ]} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit user modal */}
+      <Modal title="編輯使用者" open={!!editUser} onCancel={() => setEditUser(null)} onOk={() => editForm.submit()} destroyOnHidden>
+        <Form form={editForm} layout="vertical" onFinish={handleEditUser}>
+          <Form.Item label="姓名" name="name" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item label="角色" name="role" rules={[{ required: true }]}>
+            <Select options={[
+              { value: 'tenant_admin', label: '租戶管理員' },
+              { value: 'operator', label: '操作員' },
+              { value: 'viewer', label: '檢視者' },
+            ]} />
+          </Form.Item>
+          <Form.Item label="啟用" name="is_active" valuePropName="checked">
+            <Switch checkedChildren="啟用" unCheckedChildren="停用" />
+          </Form.Item>
+          <Form.Item label="重設密碼（留空不變更）" name="password">
+            <Input.Password placeholder="輸入新密碼（至少 8 字元）" />
           </Form.Item>
         </Form>
       </Modal>

@@ -31,6 +31,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		admin.GET("/tenants/:id/users", h.AdminListUsers)
 		admin.POST("/tenants/:id/users", h.AdminCreateUser)
 		admin.DELETE("/tenants/:id/users/:uid", h.AdminDeleteUser)
+		admin.PUT("/tenants/:id/users/:uid", h.AdminUpdateUser)
 		admin.POST("/tenants/:id/impersonate", h.AdminImpersonate)
 		admin.GET("/audit-logs", h.AdminAuditLogs)
 	}

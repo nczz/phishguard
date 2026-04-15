@@ -147,6 +147,43 @@ func (h *Handler) AdminDeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }
 
+func (h *Handler) AdminUpdateUser(c *gin.Context) {
+	uid, _ := strconv.ParseInt(c.Param("uid"), 10, 64)
+	var req struct {
+		Name     string `json:"name"`
+		Role     string `json:"role"`
+		IsActive *bool  `json:"is_active"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := h.UserRepo.FindByID(uid)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	if req.Name != "" {
+		user.Name = req.Name
+	}
+	if req.Role != "" {
+		user.Role = req.Role
+	}
+	if req.IsActive != nil {
+		user.IsActive = *req.IsActive
+	}
+	if req.Password != "" {
+		hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		user.PasswordHash = string(hash)
+	}
+	if err := h.UserRepo.Update(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
 // --- Cross-tenant Audit Logs ---
 
 func (h *Handler) AdminAuditLogs(c *gin.Context) {
