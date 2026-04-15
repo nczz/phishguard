@@ -114,7 +114,7 @@ export default function CampaignWizard() {
         name: campaignName,
         scenario_id: autoRandom ? null : selectedScenario,
         smtp_profile_id: smtpProfile?.id,
-        group_ids: selectedGroups,
+        group_ids: selectedGroups.map(Number),
         phish_url: window.location.origin + '/phish',
         selection_mode: selectionMode,
         sample_percent: selectionMode === 'sample' ? samplePercent : undefined,
