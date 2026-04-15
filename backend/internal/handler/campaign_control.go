@@ -69,7 +69,7 @@ func (h *Handler) StopCampaign(c *gin.Context) {
 		Updates(map[string]interface{}{"status": "cancelled", "error_detail": "活動已被手動終止"})
 
 	now := time.Now()
-	h.DB.Model(&campaign).Updates(map[string]interface{}{"status": "completed", "completed_at": now})
+	h.DB.Model(&campaign).Updates(map[string]interface{}{"status": "stopped", "completed_at": now})
 
 	// Count what happened
 	var sent, cancelled int64

@@ -10,7 +10,9 @@ const statusMap: Record<string, { color: string; label: string }> = {
   draft: { color: 'default', label: '草稿' },
   scheduled: { color: 'orange', label: '排程中' },
   sending: { color: 'processing', label: '發送中' },
+  paused: { color: 'warning', label: '已暫停' },
   sent: { color: 'blue', label: '已發送' },
+  stopped: { color: 'red', label: '已終止' },
   completed: { color: 'green', label: '已完成' },
 };
 

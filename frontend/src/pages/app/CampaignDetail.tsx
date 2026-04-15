@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { api, type Campaign, type CampaignReport, type DepartmentStat, type RecipientResult } from '../../api/client';
 
 const STATUS_COLOR: Record<string, string> = {
-  draft: 'default', scheduled: 'processing', sending: 'blue', paused: 'warning', completed: 'success', cancelled: 'error',
+  draft: 'default', scheduled: 'processing', sending: 'blue', paused: 'warning', stopped: 'error', completed: 'success', cancelled: 'error',
 };
 
 const FUNNEL_COLORS = ['#1677ff', '#13c2c2', '#faad14', '#ff4d4f', '#52c41a'];
