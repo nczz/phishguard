@@ -86,7 +86,7 @@ npm install && npm run dev
 ./deploy/setup.sh
 
 # 2. 編輯設定
-vim .env.prod  # 改域名、管理員帳號
+vim .env.prod  # 設定 TRACKER_BASE_URL=https://t.yourdomain.com 和管理員帳號
 
 # 3. 建置並啟動
 ./deploy/setup.sh
