@@ -52,7 +52,7 @@ export default function Dashboard() {
 
       {!hasScenarios && (
         <Alert type="info" showIcon style={{ marginBottom: 16 }}
-          message="尚未設定測試資料"
+          title="尚未設定測試資料"
           description="匯入範例資料可快速體驗完整功能，包含 5 個釣魚情境、信件模板、Landing Page 和範例收件人。"
           action={<Button type="primary" icon={<ExperimentOutlined />} loading={seeding} onClick={seedData}>匯入範例資料</Button>}
         />

@@ -267,7 +267,7 @@ export default function CampaignWizard() {
               <Descriptions.Item label="SMTP">
                 {smtpProfile
                   ? `${smtpProfile.name}（${smtpProfile.from_address}）`
-                  : <Alert type="warning" message="尚未設定 SMTP" showIcon banner />}
+                  : <Alert type="warning" title="尚未設定 SMTP" showIcon banner />}
               </Descriptions.Item>
             </Descriptions>
           </Card>
