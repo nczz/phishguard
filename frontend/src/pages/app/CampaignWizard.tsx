@@ -182,7 +182,7 @@ export default function CampaignWizard() {
             onChange={v => setSelectedGroups(v as string[])}
             style={{ marginBottom: 16 }}
           >
-            <Space direction="vertical">
+            <Space orientation="vertical">
               {groups.map(g => (
                 <Checkbox key={g.id} value={g.id}>
                   {g.name}（{g.recipients?.length ?? 0} 人）
@@ -197,7 +197,7 @@ export default function CampaignWizard() {
             onChange={e => setSelectionMode(e.target.value)}
             style={{ marginBottom: 16 }}
           >
-            <Space direction="vertical">
+            <Space orientation="vertical">
               <Radio value="all">全公司（共 {allRecipients.length} 人）</Radio>
               <Radio value="department">指定部門</Radio>
               <Radio value="sample">隨機抽樣</Radio>
@@ -210,7 +210,7 @@ export default function CampaignWizard() {
               onChange={v => setDepartments(v as string[])}
               style={{ display: 'block', marginBottom: 16, paddingLeft: 24 }}
             >
-              <Space direction="vertical">
+              <Space orientation="vertical">
                 {allDepartments.map(d => (
                   <Checkbox key={d} value={d}>{d}</Checkbox>
                 ))}

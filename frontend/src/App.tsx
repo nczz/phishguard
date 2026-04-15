@@ -12,6 +12,7 @@ const Login = lazy(() => import('./pages/Login'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const TenantList = lazy(() => import('./pages/admin/TenantList'));
 const TenantCreate = lazy(() => import('./pages/admin/TenantCreate'));
+const TenantDetail = lazy(() => import('./pages/admin/TenantDetail'));
 const Dashboard = lazy(() => import('./pages/app/Dashboard'));
 const CampaignList = lazy(() => import('./pages/app/CampaignList'));
 const CampaignWizard = lazy(() => import('./pages/app/CampaignWizard'));
@@ -48,6 +49,7 @@ export default function App() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="tenants" element={<TenantList />} />
                 <Route path="tenants/new" element={<TenantCreate />} />
+                <Route path="tenants/:id" element={<TenantDetail />} />
               </Route>
 
               <Route path="/app" element={<ProtectedRoute><TenantLayout /></ProtectedRoute>}>
