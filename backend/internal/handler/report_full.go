@@ -26,7 +26,7 @@ type DashboardStats struct {
 func (h *Handler) TenantDashboardStats(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	var campaigns []model.Campaign
-	h.DB.Where("tenant_id = ? AND status IN ?", tid, []string{"sent", "completed"}).Find(&campaigns)
+	h.DB.Where("tenant_id = ? AND status IN ?", tid, []string{"sending", "sent", "completed"}).Find(&campaigns)
 
 	stats := DashboardStats{TotalCampaigns: int64(len(campaigns))}
 	if len(campaigns) == 0 {
@@ -218,7 +218,7 @@ type TrendPoint struct {
 func (h *Handler) TrendAnalysis(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	var campaigns []model.Campaign
-	h.DB.Where("tenant_id = ? AND status IN ?", tid, []string{"sent", "completed"}).Order("launched_at ASC").Find(&campaigns)
+	h.DB.Where("tenant_id = ? AND status IN ?", tid, []string{"sending", "sent", "completed"}).Order("launched_at ASC").Find(&campaigns)
 
 	points := make([]TrendPoint, 0, len(campaigns))
 	for _, camp := range campaigns {
