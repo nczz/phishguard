@@ -56,22 +56,29 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
 		return
 	}
-	recipients := make([]model.Recipient, len(req.Recipients))
-	for i, r := range req.Recipients {
-		recipients[i] = model.Recipient{
+	recipients := make([]model.Recipient, 0, len(req.Recipients))
+	seen := make(map[string]bool)
+	for _, r := range req.Recipients {
+		email := r.Email
+		if email == "" || seen[email] {
+			continue
+		}
+		seen[email] = true
+		recipients = append(recipients, model.Recipient{
 			TenantID:   tid,
 			GroupID:    req.GroupID,
-			Email:      r.Email,
+			Email:      email,
 			FirstName:  r.FirstName,
 			LastName:   r.LastName,
 			Department: r.Department,
 			Gender:     r.Gender,
 			Position:   r.Position,
-		}
+		})
 	}
-	if err := h.RecipientRepo.BulkCreateRecipients(recipients); err != nil {
+	created, updated, err := h.RecipientRepo.UpsertRecipients(tid, req.GroupID, recipients)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"imported": len(recipients)})
+	c.JSON(http.StatusCreated, gin.H{"created": created, "updated": updated, "total": created + updated})
 }

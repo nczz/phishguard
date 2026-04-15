@@ -48,3 +48,32 @@ func (r *RecipientRepo) CountByTenant(tenantID int64) (int64, error) {
 	err := r.DB.Model(&model.Recipient{}).Where("tenant_id = ?", tenantID).Count(&count).Error
 	return count, err
 }
+
+func (r *RecipientRepo) UpsertRecipients(tenantID, groupID int64, recipients []model.Recipient) (created, updated int64, err error) {
+	for _, rec := range recipients {
+		var existing model.Recipient
+		result := r.DB.Where("tenant_id = ? AND email = ?", tenantID, rec.Email).First(&existing)
+		if result.Error != nil {
+			// Not found — create
+			if err = r.DB.Create(&rec).Error; err != nil {
+				return
+			}
+			created++
+		} else {
+			// Exists — update fields
+			err = r.DB.Model(&existing).Updates(map[string]interface{}{
+				"group_id":   groupID,
+				"first_name": rec.FirstName,
+				"last_name":  rec.LastName,
+				"department": rec.Department,
+				"gender":     rec.Gender,
+				"position":   rec.Position,
+			}).Error
+			if err != nil {
+				return
+			}
+			updated++
+		}
+	}
+	return
+}

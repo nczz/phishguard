@@ -93,8 +93,8 @@ export default function RecipientGroups() {
       if (!group) {
         group = await api.post<RecipientGroup>('/recipient-groups', { name: '全公司' });
       }
-      await api.post('/recipient-groups/import', { group_id: group.id, recipients: parsed });
-      message.success(`成功匯入 ${parsed.length} 位員工`);
+      const res = await api.post<{ created: number; updated: number; total: number }>('/recipient-groups/import', { group_id: group.id, recipients: parsed });
+      message.success(`匯入完成：新增 ${res.created} 人，更新 ${res.updated} 人`);
       setImportOpen(false);
       setParsed([]);
       load();
