@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -75,7 +76,7 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 		TemplateID:       templateID,
 		PageID:           pageID,
 		SMTPProfileID:    req.SMTPProfileID,
-		PhishURL:         req.PhishURL,
+		PhishURL:         os.Getenv("TRACKER_BASE_URL"),
 		SendBy:           sendBy,
 		ScheduleStart:    schedStart,
 		WorkingHoursOnly: req.WorkingHoursOnly,
