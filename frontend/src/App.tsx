@@ -25,6 +25,7 @@ const RecipientGroups = lazy(() => import('./pages/app/RecipientGroups'));
 const SMTPSettings = lazy(() => import('./pages/app/SMTPSettings'));
 const AuditLogs = lazy(() => import('./pages/app/AuditLogs'));
 const AutoTestSettings = lazy(() => import('./pages/app/AutoTestSettings'));
+const SeedData = lazy(() => import('./pages/app/SeedData'));
 const Guide = lazy(() => import('./pages/app/Guide'));
 const FlowDiagram = lazy(() => import('./pages/app/FlowDiagram'));
 const RepeatOffenders = lazy(() => import('./pages/app/RepeatOffenders'));
@@ -72,6 +73,7 @@ export default function App() {
                 <Route path="settings/smtp" element={<SMTPSettings />} />
                 <Route path="settings/audit" element={<AuditLogs />} />
                 <Route path="settings/auto-test" element={<AutoTestSettings />} />
+                <Route path="settings/seed" element={<SeedData />} />
                 <Route path="reports/offenders" element={<RepeatOffenders />} />
                 <Route path="reports/trend" element={<TrendAnalysis />} />
                 <Route path="guide" element={<Guide />} />

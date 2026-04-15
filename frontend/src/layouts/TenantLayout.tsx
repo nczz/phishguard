@@ -34,6 +34,7 @@ const menuItems = [
       { key: '/app/settings/smtp', label: 'SMTP 設定' },
       { key: '/app/settings/audit', label: '稽核日誌' },
       { key: '/app/settings/auto-test', label: '自動測試' },
+      { key: '/app/settings/seed', label: '匯入範例資料' },
     ],
   },
   { key: '/app/guide', icon: <BookOutlined />, label: '使用指南' },
