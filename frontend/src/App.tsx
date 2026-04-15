@@ -19,6 +19,7 @@ const CampaignWizard = lazy(() => import('./pages/app/CampaignWizard'));
 const CampaignDetail = lazy(() => import('./pages/app/CampaignDetail'));
 const ScenarioList = lazy(() => import('./pages/app/ScenarioList'));
 const TemplateList = lazy(() => import('./pages/app/TemplateList'));
+const PageList = lazy(() => import('./pages/app/PageList'));
 const RecipientGroups = lazy(() => import('./pages/app/RecipientGroups'));
 const SMTPSettings = lazy(() => import('./pages/app/SMTPSettings'));
 const AuditLogs = lazy(() => import('./pages/app/AuditLogs'));
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="campaigns/:id" element={<CampaignDetail />} />
                 <Route path="scenarios" element={<ScenarioList />} />
                 <Route path="templates" element={<TemplateList />} />
+                <Route path="pages" element={<PageList />} />
                 <Route path="recipients" element={<RecipientGroups />} />
                 <Route path="settings/smtp" element={<SMTPSettings />} />
                 <Route path="settings/audit" element={<AuditLogs />} />

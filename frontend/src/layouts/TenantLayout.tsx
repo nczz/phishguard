@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Layout, Menu, Button, Typography } from 'antd';
 import {
   DashboardOutlined, SendOutlined, AppstoreOutlined,
-  FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined,
+  FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined, LayoutOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -14,6 +14,7 @@ const menuItems = [
   { key: '/app/campaigns', icon: <SendOutlined />, label: '釣魚測試' },
   { key: '/app/scenarios', icon: <AppstoreOutlined />, label: '情境庫' },
   { key: '/app/templates', icon: <FileTextOutlined />, label: '模板管理' },
+  { key: '/app/pages', icon: <LayoutOutlined />, label: 'Landing Page' },
   { key: '/app/recipients', icon: <TeamOutlined />, label: '收件人' },
   {
     key: 'settings',
