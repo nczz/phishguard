@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -150,6 +151,16 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		}
 		recipients = dept
 	}
+
+	// Validate recipient emails — reject obviously invalid or abusive targets
+	validRecipients := make([]model.Recipient, 0, len(recipients))
+	for _, r := range recipients {
+		if !isValidRecipientEmail(r.Email) {
+			continue // skip invalid emails silently
+		}
+		validRecipients = append(validRecipients, r)
+	}
+	recipients = validRecipients
 
 	if len(recipients) == 0 {
 		return fmt.Errorf("no recipients selected")
@@ -308,4 +319,37 @@ func countValidSeconds(start, end time.Time, workingHoursOnly, skipWeekends bool
 		cursor = cursor.Add(time.Minute)
 	}
 	return count
+}
+
+// isValidRecipientEmail checks if an email is valid and not a known abuse target.
+func isValidRecipientEmail(email string) bool {
+	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		return false
+	}
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	domain := strings.ToLower(parts[1])
+
+	// Block sending to public email providers (anti-abuse: phishing tests should target company domains only)
+	blockedDomains := map[string]bool{
+		"gmail.com": true, "yahoo.com": true, "hotmail.com": true, "outlook.com": true,
+		"aol.com": true, "icloud.com": true, "mail.com": true, "protonmail.com": true,
+		"zoho.com": true, "yandex.com": true, "gmx.com": true, "live.com": true,
+	}
+	if blockedDomains[domain] {
+		return false
+	}
+
+	// Block role-based addresses
+	roleAddresses := []string{"abuse@", "postmaster@", "hostmaster@", "admin@", "webmaster@", "noc@", "security@", "mailer-daemon@"}
+	lower := strings.ToLower(email)
+	for _, prefix := range roleAddresses {
+		if strings.HasPrefix(lower, prefix) {
+			return false
+		}
+	}
+
+	return true
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/middleware"
@@ -28,6 +29,8 @@ func (h *Handler) CreateTemplate(c *gin.Context) {
 	t.TenantID = middleware.GetContextTenantID(c)
 	uid := middleware.GetUserID(c)
 	t.CreatedBy = &uid
+	t.CreatedAt = time.Now()
+	t.UpdatedAt = time.Now()
 	if err := h.TemplateRepo.Create(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

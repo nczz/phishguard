@@ -31,8 +31,8 @@ type Tenant struct {
 	MaxEmailsPerMonth   *int   `json:"max_emails_per_month"`
 	IsActive            bool   `gorm:"not null;default:true" json:"is_active"`
 	Config              string `gorm:"type:text" json:"config"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	CreatedAt           time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt           time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type User struct {
@@ -44,8 +44,8 @@ type User struct {
 	Role         string     `gorm:"size:50;not null;default:viewer" json:"role"`
 	IsActive     bool       `gorm:"not null;default:true" json:"is_active"`
 	LastLogin    *time.Time `json:"last_login"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	CreatedAt    time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt    time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type EmailTemplate struct {
@@ -58,8 +58,8 @@ type EmailTemplate struct {
 	Category  string    `gorm:"size:100" json:"category"`
 	Language  string    `gorm:"size:10;not null;default:zh-TW" json:"language"`
 	CreatedBy *int64    `json:"created_by"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 func (EmailTemplate) TableName() string { return "email_templates" }
@@ -72,8 +72,8 @@ type LandingPage struct {
 	CaptureCredentials bool      `gorm:"not null;default:false" json:"capture_credentials"`
 	CaptureFields      string    `gorm:"type:text" json:"capture_fields"`
 	RedirectURL        string    `gorm:"size:500" json:"redirect_url"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	CreatedAt          time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type Scenario struct {
@@ -89,8 +89,8 @@ type Scenario struct {
 	IsActive      bool           `gorm:"not null;default:true" json:"is_active"`
 	Template      *EmailTemplate `gorm:"foreignKey:TemplateID" json:"template,omitempty"`
 	Page          *LandingPage   `gorm:"foreignKey:PageID" json:"page,omitempty"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
+	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type RecipientGroup struct {
@@ -112,7 +112,7 @@ type Recipient struct {
 	Department string    `gorm:"size:100" json:"department"`
 	Gender     string    `gorm:"size:10" json:"gender"`
 	Position   string    `gorm:"size:100" json:"position"`
-	CreatedAt  time.Time `json:"created_at"`
+	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 
 type SMTPProfile struct {
@@ -193,7 +193,7 @@ type Event struct {
 	IPAddress  string    `gorm:"size:45" json:"ip_address"`
 	UserAgent  string    `gorm:"size:500" json:"user_agent"`
 	Detail     string    `gorm:"type:text" json:"detail"`
-	CreatedAt  time.Time `json:"created_at"`
+	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 
 type AutoTestConfig struct {
@@ -222,8 +222,8 @@ type Subscription struct {
 	ExpiresAt           time.Time `gorm:"not null" json:"expires_at"`
 	AutoRenew           bool      `gorm:"not null;default:true" json:"auto_renew"`
 	Status              string    `gorm:"size:20;not null;default:active" json:"status"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	CreatedAt           time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt           time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type UsageRecord struct {
@@ -246,5 +246,5 @@ type AuditLog struct {
 	Detail     string    `gorm:"type:text" json:"detail"`
 	IPAddress  string    `gorm:"size:45" json:"ip_address"`
 	UserAgent  string    `gorm:"size:500" json:"user_agent"`
-	CreatedAt  time.Time `json:"created_at"`
+	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
