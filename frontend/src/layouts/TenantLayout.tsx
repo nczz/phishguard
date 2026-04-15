@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Layout, Menu, Button, Typography } from 'antd';
 import {
   DashboardOutlined, SendOutlined, AppstoreOutlined,
-  FileTextOutlined, TeamOutlined, SettingOutlined,
+  FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -24,6 +24,7 @@ const menuItems = [
       { key: '/app/settings/audit', label: '稽核日誌' },
     ],
   },
+  { key: '/app/guide', icon: <BookOutlined />, label: '使用指南' },
 ];
 
 export default function TenantLayout() {
