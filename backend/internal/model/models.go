@@ -144,6 +144,9 @@ type Campaign struct {
 	PageID        *int64          `json:"page_id"`
 	SMTPProfileID int64           `gorm:"not null" json:"smtp_profile_id"`
 	PhishURL      string          `gorm:"size:500" json:"phish_url"`
+	SelectionMode string          `gorm:"size:20;not null;default:all" json:"selection_mode"`
+	SamplePercent int             `gorm:"not null;default:100" json:"sample_percent"`
+	Departments   []string        `gorm:"serializer:json;type:text" json:"departments"`
 	LaunchedAt    *time.Time      `json:"launched_at"`
 	SendBy        *time.Time      `json:"send_by"`
 	CompletedAt   *time.Time      `json:"completed_at"`

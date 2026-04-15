@@ -8,17 +8,17 @@
 
 ### 交付項目
 
-- [ ] MySQL schema 建立完成（所有核心表）
-- [ ] 租戶 CRUD API
-- [ ] 使用者 CRUD + JWT 認證
-- [ ] 情境庫 CRUD（模板 + Landing Page + 教育頁）
-- [ ] 收件人群組 CRUD + CSV 匯入
-- [ ] SMTP Profile CRUD + 測試發信
-- [ ] Campaign 建立 + 選人引擎（全選/隨機抽樣/部門篩選）
-- [ ] Mail Worker 發信（SMTP + Mailgun + SES）
-- [ ] Track Server（開信/點擊/下載/提交/舉報）
-- [ ] 漏斗統計 API
-- [ ] 稽核日誌（自動記錄所有寫入操作）
+- [x] MySQL schema 建立完成（所有核心表）
+- [x] 租戶 CRUD API
+- [x] 使用者 CRUD + JWT 認證
+- [x] 情境庫 CRUD（模板 + Landing Page + 教育頁）
+- [x] 收件人群組 CRUD + CSV 匯入
+- [x] SMTP Profile CRUD + 測試發信
+- [x] Campaign 建立 + 選人引擎（全選/隨機抽樣/部門篩選）
+- [x] Mail Worker 發信（SMTP + Mailgun + SES）
+- [x] Track Server（開信/點擊/下載/提交/舉報）
+- [x] 漏斗統計 API
+- [x] 稽核日誌（自動記錄所有寫入操作）
 
 ### 驗收條件
 
