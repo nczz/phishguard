@@ -340,16 +340,48 @@ export default function CampaignWizard() {
           {scenarioObj?.template?.html_body && (
             <>
               <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)} style={{ marginBottom: 24 }}>
-                Preview email
+                預覽信件
               </Button>
               <Modal
                 title="郵件預覽"
                 open={previewOpen}
                 onCancel={() => setPreviewOpen(false)}
                 footer={null}
-                width={640}
+                width={700}
               >
-                <div dangerouslySetInnerHTML={{ __html: scenarioObj.template.html_body }} />
+                {(() => {
+                  // Get first recipient from selected groups for preview
+                  const firstRecipient = groups
+                    .filter((g: RecipientGroup) => selectedGroups.includes(String(g.id)))
+                    .flatMap((g: RecipientGroup) => g.recipients ?? [])[0];
+                  const vars: Record<string, string> = {
+                    '{{.FirstName}}': firstRecipient?.first_name || '小明',
+                    '{{.LastName}}': firstRecipient?.last_name || '王',
+                    '{{.Email}}': firstRecipient?.email || 'user@example.com',
+                    '{{.Department}}': firstRecipient?.department || '業務部',
+                    '{{.Position}}': firstRecipient?.position || '員工',
+                    '{{.TrackURL}}': '#',
+                    '{{.ReportURL}}': '#',
+                  };
+                  let html = scenarioObj.template.html_body;
+                  for (const [k, v] of Object.entries(vars)) {
+                    html = html.split(k).join(v);
+                  }
+                  return (
+                    <div>
+                      <div style={{ marginBottom: 12, padding: '8px 12px', background: '#f5f5f5', borderRadius: 4, fontSize: 13 }}>
+                        <strong>主旨：</strong>{scenarioObj.template.subject}<br />
+                        <strong>收件人：</strong>{firstRecipient ? `${firstRecipient.last_name}${firstRecipient.first_name} <${firstRecipient.email}>` : '（請先選擇收件人群組）'}
+                      </div>
+                      <iframe
+                        srcDoc={html}
+                        style={{ width: '100%', height: 500, border: '1px solid #d9d9d9', borderRadius: 4 }}
+                        sandbox=""
+                        title="email-preview"
+                      />
+                    </div>
+                  );
+                })()}
               </Modal>
             </>
           )}
