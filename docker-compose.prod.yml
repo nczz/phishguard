@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: phishguard-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-phishguard_root}
+      MYSQL_DATABASE: phishguard
+      MYSQL_USER: phishguard
+      MYSQL_PASSWORD: ${DB_PASS:-phishguard_prod}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migration:/docker-entrypoint-initdb.d
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: mysqladmin ping -h localhost -u root -p${DB_ROOT_PASS:-phishguard_root}
+      interval: 10s
+      retries: 5
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: phishguard-redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      retries: 5
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        TARGET: api
+    container_name: phishguard-api
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: phishguard
+      DB_PASS: ${DB_PASS:-phishguard_prod}
+      DB_NAME: phishguard
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      API_ADDR: ":8080"
+      TRACKER_BASE_URL: ${TRACKER_BASE_URL:-https://t.yourdomain.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@phishguard.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123}
+    networks:
+      - internal
+
+  tracker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        TARGET: tracker
+    container_name: phishguard-tracker
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: phishguard
+      DB_PASS: ${DB_PASS:-phishguard_prod}
+      DB_NAME: phishguard
+      TRACKER_ADDR: ":8090"
+    networks:
+      - internal
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        TARGET: worker
+    container_name: phishguard-worker
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: phishguard
+      DB_PASS: ${DB_PASS:-phishguard_prod}
+      DB_NAME: phishguard
+      REDIS_ADDR: redis:6379
+      TRACKER_BASE_URL: ${TRACKER_BASE_URL:-https://t.yourdomain.com}
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: phishguard-frontend
+    restart: always
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:alpine
+    container_name: phishguard-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./deploy/certs:/etc/nginx/certs
+    depends_on:
+      - api
+      - tracker
+      - frontend
+    networks:
+      - internal
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  internal:
+    driver: bridge
