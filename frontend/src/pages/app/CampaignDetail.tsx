@@ -95,10 +95,14 @@ export default function CampaignDetail() {
 
   const exportPDF = async () => {
     const res = await fetch('/api/campaigns/' + id + '/report/pdf', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'campaign_report.pdf'; a.click();
-    URL.revokeObjectURL(url);
+    const html = await res.text();
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      // Auto trigger print dialog after content loads
+      win.onload = () => win.print();
+    }
   };
 
   const sendReport = async () => {
