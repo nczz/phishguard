@@ -13,7 +13,7 @@ func (r *RecipientRepo) CreateGroup(g *model.RecipientGroup) error {
 
 func (r *RecipientRepo) FindGroupsByTenant(tenantID int64) ([]model.RecipientGroup, error) {
 	var groups []model.RecipientGroup
-	err := r.DB.Where("tenant_id = ?", tenantID).Find(&groups).Error
+	err := r.DB.Preload("Recipients").Where("tenant_id = ?", tenantID).Find(&groups).Error
 	return groups, err
 }
 
