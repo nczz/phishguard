@@ -44,6 +44,7 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 			FirstName  string `json:"first_name"`
 			LastName   string `json:"last_name"`
 			Department string `json:"department"`
+			Gender     string `json:"gender"`
 			Position   string `json:"position"`
 		} `json:"recipients" binding:"required"`
 	}
@@ -64,6 +65,7 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 			FirstName:  r.FirstName,
 			LastName:   r.LastName,
 			Department: r.Department,
+			Gender:     r.Gender,
 			Position:   r.Position,
 		}
 	}

@@ -96,7 +96,7 @@ type RecipientGroup struct {
 	ID         int64       `gorm:"primaryKey" json:"id"`
 	TenantID   int64       `gorm:"not null;index" json:"tenant_id"`
 	Name       string      `gorm:"size:255;not null" json:"name"`
-	Recipients []Recipient `gorm:"foreignKey:GroupID" json:"recipients,omitempty"`
+	Recipients []Recipient `gorm:"foreignKey:GroupID" json:"recipients"`
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  time.Time   `json:"updated_at"`
 }
