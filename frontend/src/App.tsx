@@ -24,6 +24,7 @@ const PageList = lazy(() => import('./pages/app/PageList'));
 const RecipientGroups = lazy(() => import('./pages/app/RecipientGroups'));
 const SMTPSettings = lazy(() => import('./pages/app/SMTPSettings'));
 const AuditLogs = lazy(() => import('./pages/app/AuditLogs'));
+const AutoTestSettings = lazy(() => import('./pages/app/AutoTestSettings'));
 const Guide = lazy(() => import('./pages/app/Guide'));
 const FlowDiagram = lazy(() => import('./pages/app/FlowDiagram'));
 const RepeatOffenders = lazy(() => import('./pages/app/RepeatOffenders'));
@@ -70,6 +71,7 @@ export default function App() {
                 <Route path="recipients" element={<RecipientGroups />} />
                 <Route path="settings/smtp" element={<SMTPSettings />} />
                 <Route path="settings/audit" element={<AuditLogs />} />
+                <Route path="settings/auto-test" element={<AutoTestSettings />} />
                 <Route path="reports/offenders" element={<RepeatOffenders />} />
                 <Route path="reports/trend" element={<TrendAnalysis />} />
                 <Route path="guide" element={<Guide />} />

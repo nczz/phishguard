@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Table, Typography,
+  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Table, Typography, message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined, FilePdfOutlined, MailOutlined } from '@ant-design/icons';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   Cell, ResponsiveContainer,
@@ -91,6 +91,21 @@ export default function CampaignDetail() {
     a.download = 'campaign_results.csv';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = async () => {
+    const res = await fetch('/api/campaigns/' + id + '/report/pdf', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'campaign_report.pdf'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const sendReport = async () => {
+    try {
+      await api.post('/campaigns/' + id + '/send-report');
+      message.success('報表已寄送給租戶管理員');
+    } catch { message.error('寄送失敗'); }
   };
 
   const fmt = (v: string | null) => (v ? dayjs(v).format('MM-DD HH:mm') : '-');
@@ -205,6 +220,8 @@ export default function CampaignDetail() {
       {/* Section 4: Actions */}
       <div style={{ display: 'flex', gap: 12 }}>
         <Button icon={<DownloadOutlined />} onClick={exportCSV}>匯出 CSV</Button>
+        <Button icon={<FilePdfOutlined />} onClick={exportPDF}>匯出 PDF</Button>
+        {campaign.status === 'completed' && <Button icon={<MailOutlined />} onClick={sendReport}>寄送報表</Button>}
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/app/campaigns')}>返回列表</Button>
       </div>
     </>

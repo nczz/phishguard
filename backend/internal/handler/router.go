@@ -79,7 +79,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.DELETE("/campaigns/:id", h.DeleteCampaign)
 
 		api.GET("/campaigns/:id/report", h.GetCampaignReport)
-		api.GET("/campaigns/:id/report/pdf", h.ExportCampaignPDF)
+		api.GET("/campaigns/:id/report/pdf", h.ExportCampaignPDFReal)
 		api.GET("/campaigns/:id/recipients", h.CampaignRecipients)
 		api.GET("/campaigns/:id/export/csv", h.ExportCampaignCSV)
 
@@ -89,9 +89,13 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.GET("/reports/offenders", h.RepeatOffenders)
 		api.GET("/reports/trend", h.TrendAnalysis)
 
+		api.POST("/campaigns/:id/send-report", h.SendCampaignReportEmail)
+
 		api.GET("/audit-logs", h.ListAuditLogs)
 		api.POST("/seed-sample-data", h.SeedSampleData)
 		api.GET("/my-plan", h.GetMyPlan)
+		api.GET("/auto-test", h.GetAutoTestConfig)
+		api.PUT("/auto-test", h.SaveAutoTestConfig)
 	}
 
 	return r

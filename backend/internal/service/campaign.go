@@ -110,6 +110,16 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		}
 	}
 
+	// Cooldown: exclude recipients tested in last 30 days
+	filtered := make([]model.Recipient, 0, len(recipients))
+	for _, r := range recipients {
+		recent, _ := s.ResultRepo.FindRecentByRecipientEmail(tenantID, r.Email, 30)
+		if len(recent) == 0 {
+			filtered = append(filtered, r)
+		}
+	}
+	recipients = filtered
+
 	if len(recipients) == 0 {
 		return fmt.Errorf("no recipients selected")
 	}

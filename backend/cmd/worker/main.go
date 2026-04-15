@@ -14,6 +14,7 @@ import (
 	"github.com/phishguard/phishguard/internal/mailer"
 	"github.com/phishguard/phishguard/internal/model"
 	"github.com/phishguard/phishguard/internal/repo"
+	"github.com/phishguard/phishguard/internal/service"
 	"gorm.io/gorm"
 )
 
@@ -23,16 +24,24 @@ func main() {
 
 	resultRepo := &repo.ResultRepo{DB: database}
 	campaignRepo := &repo.CampaignRepo{DB: database}
+	recipientRepo := &repo.RecipientRepo{DB: database}
+	scenarioRepo := &repo.ScenarioRepo{DB: database}
+
+	campaignSvc := &service.CampaignService{
+		CampaignRepo: campaignRepo, ResultRepo: resultRepo,
+		RecipientRepo: recipientRepo, ScenarioRepo: scenarioRepo,
+	}
 
 	// Start mail polling loop
 	log.Println("Worker started, polling for pending emails...")
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
-	// Run once immediately, then on ticker
 	processMailQueue(database, cfg, resultRepo, campaignRepo)
+	runScheduler(database, campaignSvc)
 	for range ticker.C {
 		processMailQueue(database, cfg, resultRepo, campaignRepo)
+		runScheduler(database, campaignSvc)
 	}
 }
 
@@ -102,6 +111,8 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			campaign.CompletedAt = &now
 			campaignRepo.Update(campaign)
 			log.Printf("campaign %d: completed", campaign.ID)
+			// Auto-send report to tenant admin
+			go sendCompletionReport(database, cfg, resultRepo, campaign)
 		}
 		return
 	}
@@ -247,4 +258,27 @@ func buildMailer(smtp *model.SMTPProfile) (mailer.Mailer, error) {
 }
 
 // Ensure asynq is used (for future queue-based processing)
+func runScheduler(database *gorm.DB, campaignSvc *service.CampaignService) {
+	if err := service.RunScheduledTests(database, campaignSvc); err != nil {
+		log.Printf("scheduler error: %v", err)
+	}
+}
+
+// sendCompletionReport sends report email when campaign just completed
+func sendCompletionReport(database *gorm.DB, cfg *config.Config, resultRepo *repo.ResultRepo, campaign *model.Campaign) {
+	var smtp model.SMTPProfile
+	if err := database.First(&smtp, campaign.SMTPProfileID).Error; err != nil {
+		return
+	}
+	m, err := buildMailer(&smtp)
+	if err != nil {
+		return
+	}
+	if err := service.SendCampaignReport(database, resultRepo, campaign, m, smtp.FromAddress); err != nil {
+		log.Printf("campaign %d: failed to send report: %v", campaign.ID, err)
+	} else {
+		log.Printf("campaign %d: report sent to tenant admin", campaign.ID)
+	}
+}
+
 var _ = asynq.NewClient

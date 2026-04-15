@@ -160,6 +160,40 @@ export default function Guide() {
 
       <Divider />
 
+      {/* ── Auto Test ── */}
+      <div id="autotest" style={{ scrollMarginTop: 80 }}>
+        <Title level={4}>🔄 自動定期測試</Title>
+        <Card size="small" style={{ marginBottom: 24 }}>
+          <Paragraph>前往 <a onClick={() => nav('/app/settings/auto-test')}>設定 → 自動測試</a> 開啟自動排程。</Paragraph>
+          <ul>
+            <li><strong>頻率</strong>：每月 / 每季 / 每半年</li>
+            <li><strong>對象</strong>：全公司或隨機抽樣 N%</li>
+            <li><strong>情境</strong>：系統自動從情境庫隨機選擇</li>
+            <li><strong>冷卻期</strong>：同一人 30 天內不會被重複測試</li>
+            <li><strong>報表</strong>：測試完成後自動寄送報表給租戶管理員</li>
+          </ul>
+        </Card>
+      </div>
+
+      <Divider />
+
+      {/* ── Reports ── */}
+      <div id="reports-detail" style={{ scrollMarginTop: 80 }}>
+        <Title level={4}>📈 報表功能</Title>
+        <Card size="small" style={{ marginBottom: 24 }}>
+          <Row gutter={16}>
+            <Col span={8}><Card size="small" title="匯出 PDF"><Text type="secondary">活動詳情頁 → 匯出 PDF，包含漏斗統計和部門排名，可直接交給管理層。</Text></Card></Col>
+            <Col span={8}><Card size="small" title="匯出 CSV"><Text type="secondary">活動詳情頁 → 匯出 CSV，包含每位收件人的完整狀態和時間戳。</Text></Card></Col>
+            <Col span={8}><Card size="small" title="寄送報表"><Text type="secondary">活動完成後，點擊「寄送報表」或系統自動寄送給租戶管理員。</Text></Card></Col>
+          </Row>
+          <Paragraph style={{ marginTop: 12 }}>
+            <strong>進階報表：</strong>側邊欄 → 報表 → <a onClick={() => nav('/app/reports/offenders')}>累犯追蹤</a>（跨活動個人歷史）和 <a onClick={() => nav('/app/reports/trend')}>趨勢分析</a>（折線圖對比各次活動指標變化）。
+          </Paragraph>
+        </Card>
+      </div>
+
+      <Divider />
+
       {/* ── FAQ ── */}
       <div id="faq" style={{ scrollMarginTop: 80 }}>
         <Title level={4}>❓ 常見問題</Title>
