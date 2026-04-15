@@ -168,19 +168,20 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 
 		if err := m.Send(context.Background(), msg); err != nil {
 			log.Printf("campaign %d: failed to send to %s: %v", campaign.ID, r.Recipient.Email, err)
-			r.Status = model.EventError
-			r.ErrorDetail = err.Error()
-			// Retry logic: if transient error, keep as scheduled for next cycle
 			if isTransientError(err) {
 				log.Printf("campaign %d: will retry %s next cycle", campaign.ID, r.Recipient.Email)
-				continue // don't update status, will be picked up again
+				continue
 			}
+			// Permanent error — mark as failed
+			database.Model(r).Select("status", "error_detail").Updates(model.Result{
+				Status: model.EventError, ErrorDetail: err.Error(),
+			})
 		} else {
 			sentAt := time.Now()
-			r.Status = model.EventSent
-			r.SentAt = &sentAt
+			database.Model(r).Select("status", "sent_at").Updates(model.Result{
+				Status: model.EventSent, SentAt: &sentAt,
+			})
 		}
-		database.Save(r)
 	}
 }
 
@@ -190,7 +191,7 @@ func isTransientError(err error) bool {
 		// SMTP transient codes
 		"421", "450", "451", "452",
 		// Connection issues
-		"connection reset", "connection refused", "timeout", "eof",
+		"connection reset", "timeout", "eof",
 		// AWS SES specific
 		"throttlingexception", "throttling", "rate exceeded",
 		"toomanyrequestsexception", "maximum sending rate",
