@@ -26,6 +26,8 @@ export default function ScenarioList() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Scenario | null>(null);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [form] = Form.useForm();
 
   const load = () => {
@@ -129,7 +131,12 @@ export default function ScenarioList() {
           <Form.Item name="education_html" label="教育頁內容 (HTML)" rules={[{ required: true }]}>
             <Input.TextArea rows={6} placeholder="<h1>這是一封釣魚測試信</h1><p>以下是辨識方法...</p>" />
           </Form.Item>
+          <Button type="dashed" block style={{ marginBottom: 16 }} onClick={() => { setPreviewHtml(form.getFieldValue('education_html') || ''); setPreviewOpen(true); }}>👁 預覽教育頁</Button>
         </Form>
+      </Drawer>
+
+      <Drawer title="教育頁預覽" open={previewOpen} onClose={() => setPreviewOpen(false)} width={520}>
+        <div dangerouslySetInnerHTML={{ __html: previewHtml }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, minHeight: 400 }} />
       </Drawer>
     </div>
   );
