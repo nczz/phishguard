@@ -44,6 +44,7 @@ func (h *Handler) AdminUpdatePlan(c *gin.Context) {
 		Plan                string `json:"plan"`
 		MaxRecipients       *int   `json:"max_recipients"`
 		MaxCampaignsPerYear *int   `json:"max_campaigns_per_year"`
+		MaxEmailsPerMonth   *int   `json:"max_emails_per_month"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -58,6 +59,9 @@ func (h *Handler) AdminUpdatePlan(c *gin.Context) {
 	}
 	if req.MaxCampaignsPerYear != nil {
 		updates["max_campaigns_per_year"] = *req.MaxCampaignsPerYear
+	}
+	if req.MaxEmailsPerMonth != nil {
+		updates["max_emails_per_month"] = *req.MaxEmailsPerMonth
 	}
 	h.DB.Model(&model.Tenant{}).Where("id = ?", id).Updates(updates)
 	c.JSON(http.StatusOK, gin.H{"message": "updated"})

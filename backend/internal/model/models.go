@@ -28,6 +28,7 @@ type Tenant struct {
 	Plan                string `gorm:"size:50;not null;default:free" json:"plan"`
 	MaxRecipients       int    `gorm:"not null;default:100" json:"max_recipients"`
 	MaxCampaignsPerYear *int   `json:"max_campaigns_per_year"`
+	MaxEmailsPerMonth   *int   `json:"max_emails_per_month"`
 	IsActive            bool   `gorm:"not null;default:true" json:"is_active"`
 	Config              string `gorm:"type:text" json:"config"`
 	CreatedAt           time.Time `json:"created_at"`

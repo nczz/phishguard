@@ -61,5 +61,8 @@ func GetEffectiveLimits(t *model.Tenant) PlanConfig {
 	if t.MaxCampaignsPerYear != nil && *t.MaxCampaignsPerYear >= 0 {
 		pc.MaxCampaignsPerYear = *t.MaxCampaignsPerYear
 	}
+	if t.MaxEmailsPerMonth != nil && *t.MaxEmailsPerMonth >= 0 {
+		pc.MaxEmailsPerMonth = *t.MaxEmailsPerMonth
+	}
 	return pc
 }

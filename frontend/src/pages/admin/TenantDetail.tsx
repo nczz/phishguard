@@ -205,6 +205,7 @@ export default function TenantDetail() {
                   </Form.Item>
                   <Form.Item name="max_recipients" label="收件人上限"><InputNumber min={0} placeholder="0=用方案預設" /></Form.Item>
                   <Form.Item name="max_campaigns_per_year" label="年度活動上限"><InputNumber min={0} placeholder="0=無限" /></Form.Item>
+                  <Form.Item name="max_emails_per_month" label="月發信上限"><InputNumber min={0} placeholder="0=無限" /></Form.Item>
                   <Form.Item><Button type="primary" htmlType="submit">儲存</Button></Form.Item>
                 </Form>
               </Card>
