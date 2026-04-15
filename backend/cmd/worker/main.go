@@ -185,10 +185,22 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 }
 
 func isTransientError(err error) bool {
-	msg := err.Error()
-	// Common transient SMTP errors
-	for _, code := range []string{"421", "450", "451", "452", "connection reset", "timeout", "throttl"} {
-		if strings.Contains(strings.ToLower(msg), code) {
+	msg := strings.ToLower(err.Error())
+	transientPatterns := []string{
+		// SMTP transient codes
+		"421", "450", "451", "452",
+		// Connection issues
+		"connection reset", "connection refused", "timeout", "eof",
+		// AWS SES specific
+		"throttlingexception", "throttling", "rate exceeded",
+		"toomanyrequestsexception", "maximum sending rate",
+		// Mailgun specific
+		"429", "rate limit", "too many requests",
+		// Generic
+		"temporary", "try again",
+	}
+	for _, p := range transientPatterns {
+		if strings.Contains(msg, p) {
 			return true
 		}
 	}
