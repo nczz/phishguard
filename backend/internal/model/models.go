@@ -109,6 +109,7 @@ type Recipient struct {
 	FirstName  string    `gorm:"size:100" json:"first_name"`
 	LastName   string    `gorm:"size:100" json:"last_name"`
 	Department string    `gorm:"size:100" json:"department"`
+	Gender     string    `gorm:"size:10" json:"gender"`
 	Position   string    `gorm:"size:100" json:"position"`
 	CreatedAt  time.Time `json:"created_at"`
 }

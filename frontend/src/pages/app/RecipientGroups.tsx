@@ -4,13 +4,13 @@ import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined } from '@
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
 
-const CSV_TEMPLATE = `email,first_name,last_name,department,position
-wang@example.com,王,小明,業務部,業務經理
-chen@example.com,陳,小華,財務部,會計
-lin@example.com,林,小美,研發部,工程師
+const CSV_TEMPLATE = `email,first_name,last_name,department,gender,position
+wang@example.com,小明,王,業務部,男,業務經理
+chen@example.com,小華,陳,財務部,女,會計
+lin@example.com,小美,林,研發部,不指定,工程師
 `;
 
-interface ParsedRow { email: string; first_name: string; last_name: string; department: string; position: string }
+interface ParsedRow { email: string; first_name: string; last_name: string; department: string; gender: string; position: string }
 
 function parseCSV(text: string): ParsedRow[] {
   const lines = text.trim().split(/\r?\n/);
@@ -20,11 +20,12 @@ function parseCSV(text: string): ParsedRow[] {
   const fi = header.indexOf('first_name');
   const li = header.indexOf('last_name');
   const di = header.indexOf('department');
+  const gi = header.indexOf('gender');
   const pi = header.indexOf('position');
   if (ei < 0) { message.error('CSV 必須包含 email 欄位'); return []; }
   return lines.slice(1).filter(l => l.trim()).map(line => {
     const cols = line.split(',').map(c => c.trim());
-    return { email: cols[ei] || '', first_name: cols[fi] ?? '', last_name: cols[li] ?? '', department: cols[di] ?? '', position: cols[pi] ?? '' };
+    return { email: cols[ei] || '', first_name: cols[fi] ?? '', last_name: cols[li] ?? '', department: cols[di] ?? '', gender: cols[gi] ?? '不指定', position: cols[pi] ?? '' };
   }).filter(r => r.email.includes('@'));
 }
 
@@ -167,6 +168,8 @@ export default function RecipientGroups() {
               { title: '名', dataIndex: 'first_name', width: 80 },
               { title: '部門', dataIndex: 'department', width: 120, render: (d: string) => <Tag>{d || '未分類'}</Tag>,
                 filters: departments.map(d => ({ text: d, value: d })), onFilter: (v: unknown, r: Recipient) => r.department === v },
+              { title: '性別', dataIndex: 'gender', width: 80, render: (g: string) => g || '不指定',
+                filters: [{ text: '男', value: '男' }, { text: '女', value: '女' }, { text: '不指定', value: '不指定' }], onFilter: (v: unknown, r: Recipient) => (r.gender || '不指定') === v },
               { title: '職稱', dataIndex: 'position', width: 120 },
             ]}
           />
@@ -190,6 +193,7 @@ export default function RecipientGroups() {
             { title: '姓', dataIndex: 'last_name', width: 80 },
             { title: '名', dataIndex: 'first_name', width: 80 },
             { title: '部門', dataIndex: 'department', width: 120 },
+            { title: '性別', dataIndex: 'gender', width: 80 },
             { title: '職稱', dataIndex: 'position', width: 120 },
           ]}
         />
