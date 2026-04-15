@@ -76,7 +76,7 @@ func (h *Handler) HandleClick(c *gin.Context) {
 	var campaign model.Campaign
 	h.DB.First(&campaign, result.CampaignID)
 	phishURL := strings.TrimRight(campaign.PhishURL, "/")
-	c.Redirect(http.StatusFound, phishURL+"/landing?rid="+result.RID)
+	c.Redirect(http.StatusFound, phishURL+"/t/landing?rid="+result.RID)
 }
 
 // HandleDownload does not exist as a constant — we don't need the Campaign preload here.
