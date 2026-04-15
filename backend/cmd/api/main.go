@@ -26,7 +26,7 @@ func main() {
 	auditRepo := &repo.AuditRepo{DB: database}
 
 	authSvc := &service.AuthService{UserRepo: userRepo, JWTSecret: cfg.JWTSecret}
-	tenantSvc := &service.TenantService{TenantRepo: tenantRepo, UserRepo: userRepo}
+	tenantSvc := &service.TenantService{TenantRepo: tenantRepo, UserRepo: userRepo, DB: database}
 	campaignSvc := &service.CampaignService{
 		CampaignRepo:  campaignRepo,
 		ResultRepo:    resultRepo,

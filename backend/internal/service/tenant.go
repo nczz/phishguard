@@ -4,6 +4,7 @@ import (
 	"github.com/phishguard/phishguard/internal/model"
 	"github.com/phishguard/phishguard/internal/repo"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type PlatformStats struct {
@@ -14,6 +15,7 @@ type PlatformStats struct {
 type TenantService struct {
 	TenantRepo *repo.TenantRepo
 	UserRepo   *repo.UserRepo
+	DB         *gorm.DB
 }
 
 func (s *TenantService) Create(name, slug, plan string) (*model.Tenant, error) {
@@ -38,7 +40,12 @@ func (s *TenantService) CreateWithAdmin(name, slug, plan, adminEmail, adminPassw
 		Role:         "tenant_admin",
 		IsActive:     true,
 	})
-	return t, err
+	if err != nil {
+		return nil, err
+	}
+	// Seed default templates, scenarios, landing pages, sample recipients
+	_ = SeedTenantData(s.DB, t.ID)
+	return t, nil
 }
 
 func (s *TenantService) GetDashboardStats() (*PlatformStats, error) {
