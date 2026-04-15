@@ -149,9 +149,12 @@ type Campaign struct {
 	SelectionMode string          `gorm:"size:20;not null;default:all" json:"selection_mode"`
 	SamplePercent int             `gorm:"not null;default:100" json:"sample_percent"`
 	Departments   []string        `gorm:"serializer:json;type:text" json:"departments"`
-	LaunchedAt    *time.Time      `json:"launched_at"`
-	SendBy        *time.Time      `json:"send_by"`
-	CompletedAt   *time.Time      `json:"completed_at"`
+	LaunchedAt       *time.Time      `json:"launched_at"`
+	SendBy           *time.Time      `json:"send_by"`
+	ScheduleStart    *time.Time      `json:"schedule_start"`
+	WorkingHoursOnly bool            `gorm:"not null;default:false" json:"working_hours_only"`
+	SkipWeekends     bool            `gorm:"not null;default:false" json:"skip_weekends"`
+	CompletedAt      *time.Time      `json:"completed_at"`
 	CreatedBy     *int64          `json:"created_by"`
 	Results       []Result        `gorm:"foreignKey:CampaignID" json:"results,omitempty"`
 	Groups        []CampaignGroup `gorm:"foreignKey:CampaignID" json:"groups,omitempty"`

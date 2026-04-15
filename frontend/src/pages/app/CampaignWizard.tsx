@@ -54,7 +54,11 @@ export default function CampaignWizard() {
   const [samplePercent, setSamplePercent] = useState(30);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
-  const [spreadSend, setSpreadSend] = useState(false);
+  const [sendMode, setSendMode] = useState<'immediate' | 'scheduled'>('immediate');
+  const [scheduleStart, setScheduleStart] = useState<string>('');
+  const [scheduleEnd, setScheduleEnd] = useState<string>('');
+  const [workingHoursOnly, setWorkingHoursOnly] = useState(true);
+  const [skipWeekends, setSkipWeekends] = useState(true);
   const [campaignName, setCampaignName] = useState(defaultCampaignName);
 
   useEffect(() => {
@@ -112,7 +116,11 @@ export default function CampaignWizard() {
         selection_mode: selectionMode,
         sample_percent: selectionMode === 'sample' ? samplePercent : undefined,
         departments: selectionMode === 'department' ? departments : undefined,
-        spread_send: spreadSend,
+        send_mode: sendMode,
+        schedule_start: sendMode === 'scheduled' ? scheduleStart : undefined,
+        schedule_end: sendMode === 'scheduled' ? scheduleEnd : undefined,
+        working_hours_only: workingHoursOnly,
+        skip_weekends: skipWeekends,
       });
       await api.post('/campaigns/' + campaign.id + '/launch');
       message.success('測試已發送！');
@@ -237,9 +245,39 @@ export default function CampaignWizard() {
             </Text>
           )}
 
-          <Checkbox checked={spreadSend} onChange={e => setSpreadSend(e.target.checked)}>
-            分散發送（避免員工互相通風報信） <Tooltip title={tips.spreadSend}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip>
-          </Checkbox>
+          <Card size="small" title="發送排程" style={{ marginTop: 16 }}>
+            <Radio.Group value={sendMode} onChange={e => setSendMode(e.target.value)} style={{ marginBottom: 12 }}>
+              <Radio value="immediate">立即發送（系統自動控制速率）</Radio>
+              <Radio value="scheduled">排程發送（指定時間窗口）</Radio>
+            </Radio.Group>
+
+            {sendMode === 'scheduled' && (
+              <div style={{ marginLeft: 24 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text>開始時間：</Text>
+                  <input type="datetime-local" value={scheduleStart} onChange={e => setScheduleStart(e.target.value ? new Date(e.target.value).toISOString() : '')} style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #d9d9d9' }} />
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text>結束時間：</Text>
+                  <input type="datetime-local" value={scheduleEnd ? scheduleEnd.slice(0, 16) : ''} onChange={e => setScheduleEnd(e.target.value ? new Date(e.target.value).toISOString() : '')} style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #d9d9d9' }} />
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: 8 }}>
+              <Checkbox checked={workingHoursOnly} onChange={e => setWorkingHoursOnly(e.target.checked)}>
+                僅工作時間發送（09:00-17:00）
+              </Checkbox>
+            </div>
+            <div>
+              <Checkbox checked={skipWeekends} onChange={e => setSkipWeekends(e.target.checked)}>
+                避開週末（週六、週日不發送）
+              </Checkbox>
+            </div>
+            <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+              💡 發信速率由系統根據發信服務商（SES/Mailgun/SMTP）的政策自動控制，無需手動設定。
+            </Text>
+          </Card>
         </>
       )}
 
@@ -263,7 +301,9 @@ export default function CampaignWizard() {
                 {selectionMode === 'sample' && `隨機抽樣 ${samplePercent}%（約 ${estimatedCount} 人）`}
               </Descriptions.Item>
               <Descriptions.Item label="發送方式">
-                {spreadSend ? '分散發送' : '立即發送'}
+                {sendMode === 'scheduled' ? `排程發送 (${scheduleStart ? new Date(scheduleStart).toLocaleString('zh-TW') : '?'} ~ ${scheduleEnd ? new Date(scheduleEnd).toLocaleString('zh-TW') : '?'})` : '立即發送'}
+                {workingHoursOnly && ' · 僅工作時間'}
+                {skipWeekends && ' · 避開週末'}
               </Descriptions.Item>
               <Descriptions.Item label="SMTP">
                 {smtpProfile
