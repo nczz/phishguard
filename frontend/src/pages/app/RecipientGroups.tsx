@@ -127,7 +127,9 @@ export default function RecipientGroups() {
   };
 
   // Edit
-  const openEdit = (r: Recipient) => { setEditRecord(r); editForm.setFieldsValue(r); setEditOpen(true); };
+  const openEdit = (r: Recipient) => { setEditRecord(r); setEditOpen(true); };
+
+  useEffect(() => { if (editOpen && editRecord) editForm.setFieldsValue(editRecord); }, [editOpen, editRecord, editForm]);
   const saveEdit = async (values: Record<string, string>) => {
     if (!editRecord) return;
     try {

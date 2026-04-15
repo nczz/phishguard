@@ -59,10 +59,15 @@ export default function SMTPSettings() {
 
   const onTest = async () => {
     if (!testModal || !testEmail) return;
-    await api.post('/smtp-profiles/' + testModal + '/test', { to: testEmail });
-    message.success('測試信已發送');
-    setTestModal(null);
-    setTestEmail('');
+    try {
+      await api.post('/smtp-profiles/' + testModal + '/test', { to: testEmail });
+      message.success('測試信已發送');
+      setTestModal(null);
+      setTestEmail('');
+    } catch (e: unknown) {
+      const msg = (e && typeof e === 'object' && 'displayMessage' in e) ? (e as { displayMessage: string }).displayMessage : '發送失敗，請檢查 SMTP 設定是否正確';
+      message.error(msg);
+    }
   };
 
   const columns = [
