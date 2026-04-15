@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/middleware"
@@ -20,12 +21,24 @@ func (h *Handler) ListPages(c *gin.Context) {
 }
 
 func (h *Handler) CreatePage(c *gin.Context) {
-	var p model.LandingPage
-	if err := c.ShouldBindJSON(&p); err != nil {
+	var req struct {
+		Name               string `json:"name" binding:"required"`
+		HTML               string `json:"html" binding:"required"`
+		CaptureCredentials bool   `json:"capture_credentials"`
+		CaptureFields      string `json:"capture_fields"`
+		RedirectURL        string `json:"redirect_url"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	p.TenantID = middleware.GetContextTenantID(c)
+	p := model.LandingPage{
+		TenantID: middleware.GetContextTenantID(c),
+		Name: req.Name, HTML: req.HTML,
+		CaptureCredentials: req.CaptureCredentials,
+		CaptureFields: req.CaptureFields, RedirectURL: req.RedirectURL,
+		CreatedAt: time.Now(), UpdatedAt: time.Now(),
+	}
 	if err := h.PageRepo.Create(&p); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

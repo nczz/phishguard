@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/middleware"
@@ -20,12 +21,28 @@ func (h *Handler) ListScenarios(c *gin.Context) {
 }
 
 func (h *Handler) CreateScenario(c *gin.Context) {
-	var s model.Scenario
-	if err := c.ShouldBindJSON(&s); err != nil {
+	var req struct {
+		Name          string `json:"name" binding:"required"`
+		Category      string `json:"category" binding:"required"`
+		Difficulty    int    `json:"difficulty"`
+		Language      string `json:"language"`
+		TemplateID    *int64 `json:"template_id"`
+		PageID        *int64 `json:"page_id"`
+		EducationHTML string `json:"education_html"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	s.TenantID = middleware.GetContextTenantID(c)
+	s := model.Scenario{
+		TenantID: middleware.GetContextTenantID(c),
+		Name: req.Name, Category: req.Category, Difficulty: req.Difficulty,
+		Language: req.Language, TemplateID: req.TemplateID, PageID: req.PageID,
+		EducationHTML: req.EducationHTML, IsActive: true,
+		CreatedAt: time.Now(), UpdatedAt: time.Now(),
+	}
+	if s.Language == "" { s.Language = "zh-TW" }
+	if s.Difficulty == 0 { s.Difficulty = 2 }
 	if err := h.ScenarioRepo.Create(&s); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

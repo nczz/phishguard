@@ -21,16 +21,34 @@ func (h *Handler) ListTemplates(c *gin.Context) {
 }
 
 func (h *Handler) CreateTemplate(c *gin.Context) {
-	var t model.EmailTemplate
-	if err := c.ShouldBindJSON(&t); err != nil {
+	var req struct {
+		Name     string `json:"name" binding:"required"`
+		Subject  string `json:"subject" binding:"required"`
+		HTMLBody string `json:"html_body"`
+		TextBody string `json:"text_body"`
+		Category string `json:"category"`
+		Language string `json:"language"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	t.TenantID = middleware.GetContextTenantID(c)
 	uid := middleware.GetUserID(c)
-	t.CreatedBy = &uid
-	t.CreatedAt = time.Now()
-	t.UpdatedAt = time.Now()
+	t := model.EmailTemplate{
+		TenantID:  middleware.GetContextTenantID(c),
+		Name:      req.Name,
+		Subject:   req.Subject,
+		HTMLBody:  req.HTMLBody,
+		TextBody:  req.TextBody,
+		Category:  req.Category,
+		Language:  req.Language,
+		CreatedBy: &uid,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if t.Language == "" {
+		t.Language = "zh-TW"
+	}
 	if err := h.TemplateRepo.Create(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
