@@ -33,6 +33,9 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		admin.DELETE("/tenants/:id/users/:uid", h.AdminDeleteUser)
 		admin.PUT("/tenants/:id/users/:uid", h.AdminUpdateUser)
 		admin.POST("/tenants/:id/impersonate", h.AdminImpersonate)
+		admin.GET("/tenants/:id/plan", h.AdminGetPlan)
+		admin.PUT("/tenants/:id/plan", h.AdminUpdatePlan)
+		admin.GET("/plans", h.ListPlans)
 		admin.GET("/audit-logs", h.AdminAuditLogs)
 	}
 
@@ -83,6 +86,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 
 		api.GET("/audit-logs", h.ListAuditLogs)
 		api.POST("/seed-sample-data", h.SeedSampleData)
+		api.GET("/my-plan", h.GetMyPlan)
 	}
 
 	return r

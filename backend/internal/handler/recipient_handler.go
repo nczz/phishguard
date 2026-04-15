@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/middleware"
 	"github.com/phishguard/phishguard/internal/model"
+	"github.com/phishguard/phishguard/internal/service"
 )
 
 func (h *Handler) ListRecipientGroups(c *gin.Context) {
@@ -38,6 +40,20 @@ func (h *Handler) CreateRecipientGroup(c *gin.Context) {
 
 func (h *Handler) ImportRecipients(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
+
+	// Plan limit check: max recipients
+	var tenant model.Tenant
+	if err := h.DB.First(&tenant, tid).Error; err == nil {
+		limits := service.GetEffectiveLimits(&tenant)
+		if limits.MaxRecipients > 0 {
+			current, _ := h.RecipientRepo.CountByTenant(tid)
+			if current >= int64(limits.MaxRecipients) {
+				c.JSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("已達收件人上限 (%d 人)，請升級方案或聯繫管理員調整", limits.MaxRecipients)})
+				return
+			}
+		}
+	}
+
 	var req struct {
 		GroupID    int64 `json:"group_id" binding:"required"`
 		Recipients []struct {

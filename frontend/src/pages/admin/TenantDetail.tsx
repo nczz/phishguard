@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Descriptions, Table, Tabs, Tag, Badge, Button, Switch, Modal,
-  Form, Input, Select, Popconfirm, Spin, Space, Typography, message,
+  Form, Input, InputNumber, Select, Popconfirm, Spin, Space, Typography, message,
 } from 'antd';
 import { api } from '../../api/client';
 import type { Tenant, Campaign, User } from '../../api/client';
@@ -26,6 +26,8 @@ export default function TenantDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [editForm] = Form.useForm();
+  const [planData, setPlanData] = useState<Record<string, unknown> | null>(null);
+  const [planForm] = Form.useForm();
 
   const fetchAll = () => {
     setLoading(true);
@@ -33,8 +35,9 @@ export default function TenantDetail() {
       api.get<Tenant>('/admin/tenants/' + id),
       api.get<Campaign[]>('/admin/tenants/' + id + '/campaigns'),
       api.get<User[]>('/admin/tenants/' + id + '/users'),
+      api.get<Record<string, unknown>>('/admin/tenants/' + id + '/plan'),
     ])
-      .then(([t, c, u]) => { setTenant(t); setCampaigns(c); setUsers(u); })
+      .then(([t, c, u, p]) => { setTenant(t); setCampaigns(c); setUsers(u); setPlanData(p); })
       .catch(() => message.error('載入失敗'))
       .finally(() => setLoading(false));
   };
@@ -170,6 +173,42 @@ export default function TenantDetail() {
               ]} />
             </>
           ),
+        },
+        {
+          key: 'plan',
+          label: '方案與限制',
+          children: planData ? (
+            <>
+              <Descriptions bordered column={2} size="small" style={{ marginBottom: 16 }}>
+                <Descriptions.Item label="目前方案"><Tag color={planColor[tenant?.plan || 'free']}>{tenant?.plan}</Tag></Descriptions.Item>
+                <Descriptions.Item label="收件人">{String((planData.usage as Record<string,number>)?.recipients ?? 0)} / {(planData.limits as Record<string,number>)?.max_recipients === 0 ? '無限' : String((planData.limits as Record<string,number>)?.max_recipients)}</Descriptions.Item>
+                <Descriptions.Item label="本年活動">{String((planData.usage as Record<string,number>)?.campaigns_this_year ?? 0)} / {(planData.limits as Record<string,number>)?.max_campaigns_per_year === 0 ? '無限' : String((planData.limits as Record<string,number>)?.max_campaigns_per_year)}</Descriptions.Item>
+                <Descriptions.Item label="自訂模板">{(planData.limits as Record<string,boolean>)?.custom_template ? '✅' : '❌'}</Descriptions.Item>
+                <Descriptions.Item label="自動測試">{(planData.limits as Record<string,boolean>)?.auto_test ? '✅' : '❌'}</Descriptions.Item>
+                <Descriptions.Item label="部門報表">{(planData.limits as Record<string,boolean>)?.department_report ? '✅' : '❌'}</Descriptions.Item>
+              </Descriptions>
+              <Card title="覆蓋設定（管理員手動調整）" size="small">
+                <Form layout="inline" form={planForm} initialValues={{
+                  plan: tenant?.plan,
+                  max_recipients: (planData.overrides as Record<string,number>)?.max_recipients,
+                  max_campaigns_per_year: (planData.overrides as Record<string,number>)?.max_campaigns_per_year,
+                }} onFinish={async (v) => {
+                  try {
+                    await api.put('/admin/tenants/' + id + '/plan', v);
+                    message.success('已更新');
+                    fetchAll();
+                  } catch { message.error('更新失敗'); }
+                }}>
+                  <Form.Item name="plan" label="方案">
+                    <Select style={{ width: 120 }} options={[{ value: 'free', label: 'Free' }, { value: 'pro', label: 'Pro' }, { value: 'enterprise', label: 'Enterprise' }]} />
+                  </Form.Item>
+                  <Form.Item name="max_recipients" label="收件人上限"><InputNumber min={0} placeholder="0=用方案預設" /></Form.Item>
+                  <Form.Item name="max_campaigns_per_year" label="年度活動上限"><InputNumber min={0} placeholder="0=無限" /></Form.Item>
+                  <Form.Item><Button type="primary" htmlType="submit">儲存</Button></Form.Item>
+                </Form>
+              </Card>
+            </>
+          ) : null,
         },
       ]} />
 
