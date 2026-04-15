@@ -188,27 +188,7 @@ export default function CampaignWizard() {
         <>
           <Title level={4}>選擇測試對象</Title>
 
-          {/* Only show group selector when multiple groups exist */}
-          {groups.length > 1 && (
-            <>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>收件人來源</Text>
-              <Checkbox.Group
-                value={selectedGroups}
-                onChange={v => setSelectedGroups(v as string[])}
-                style={{ marginBottom: 16 }}
-              >
-                <Space orientation="vertical">
-                  {groups.map(g => (
-                    <Checkbox key={g.id} value={g.id}>
-                      {g.name}（{g.recipients?.length ?? 0} 人）
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Checkbox.Group>
-            </>
-          )}
-
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>測試範圍（共 {estimatedCount} 人可測試）</Text>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>測試範圍（目前共 {allRecipients.length} 位收件人）</Text>
           <Radio.Group
             value={selectionMode}
             onChange={e => setSelectionMode(e.target.value)}
