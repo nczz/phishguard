@@ -81,6 +81,60 @@ func (h *Handler) CreateSMTPProfile(c *gin.Context) {
 	c.JSON(http.StatusCreated, p)
 }
 
+func (h *Handler) UpdateSMTPProfile(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	existing, err := h.SMTPRepo.FindByID(tid, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "profile not found"})
+		return
+	}
+	var req struct {
+		Name          string `json:"name"`
+		MailerType    string `json:"mailer_type"`
+		Host          string `json:"host"`
+		Port          *int   `json:"port"`
+		Username      string `json:"username"`
+		Password      string `json:"password"`
+		FromAddress   string `json:"from_address"`
+		FromName      string `json:"from_name"`
+		TLSRequired   *bool  `json:"tls_required"`
+		MailgunDomain string `json:"mailgun_domain"`
+		MailgunAPIKey string `json:"mailgun_api_key"`
+		SESRegion     string `json:"ses_region"`
+		SESAccessKey  string `json:"ses_access_key"`
+		SESSecretKey  string `json:"ses_secret_key"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.FromAddress != "" && !strings.Contains(req.FromAddress, "@") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "寄件地址必須是完整的 email 格式"})
+		return
+	}
+	if req.Name != "" { existing.Name = req.Name }
+	if req.MailerType != "" { existing.MailerType = req.MailerType }
+	if req.Host != "" { existing.Host = req.Host }
+	if req.Port != nil { existing.Port = req.Port }
+	if req.Username != "" { existing.Username = req.Username }
+	if req.Password != "" { existing.PasswordEnc = []byte(req.Password) }
+	if req.FromAddress != "" { existing.FromAddress = req.FromAddress }
+	if req.FromName != "" { existing.FromName = req.FromName }
+	if req.TLSRequired != nil { existing.TLSRequired = *req.TLSRequired }
+	if req.MailgunDomain != "" { existing.MailgunDomain = req.MailgunDomain }
+	if req.MailgunAPIKey != "" { existing.MailgunAPIKey = []byte(req.MailgunAPIKey) }
+	if req.SESRegion != "" { existing.SESRegion = req.SESRegion }
+	if req.SESAccessKey != "" { existing.SESAccessKey = []byte(req.SESAccessKey) }
+	if req.SESSecretKey != "" { existing.SESSecretKey = []byte(req.SESSecretKey) }
+
+	if err := h.SMTPRepo.Update(tid, existing); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, existing)
+}
+
 func (h *Handler) TestSMTPProfile(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)

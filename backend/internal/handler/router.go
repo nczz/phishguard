@@ -70,6 +70,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.GET("/smtp-profiles", h.ListSMTPProfiles)
 		api.POST("/smtp-profiles", h.CreateSMTPProfile)
 		api.POST("/smtp-profiles/:id/test", h.TestSMTPProfile)
+		api.PUT("/smtp-profiles/:id", h.UpdateSMTPProfile)
 		api.POST("/smtp-profiles/check-compliance", h.CheckMailCompliance)
 
 		api.POST("/campaigns", h.CreateCampaign)

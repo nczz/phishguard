@@ -11,6 +11,7 @@ export default function SMTPSettings() {
   const [data, setData] = useState<SMTPProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<SMTPProfile | null>(null);
   const [testModal, setTestModal] = useState<string | null>(null);
   const [testEmail, setTestEmail] = useState('');
   const [form] = Form.useForm();
@@ -45,11 +46,23 @@ export default function SMTPSettings() {
   useEffect(load, []);
 
   const onFinish = async (values: Record<string, unknown>) => {
-    await api.post('/smtp-profiles', values);
-    message.success('已新增');
-    setOpen(false);
-    load();
+    try {
+      if (editing) {
+        await api.put('/smtp-profiles/' + editing.id, values);
+        message.success('已更新');
+      } else {
+        await api.post('/smtp-profiles', values);
+        message.success('已新增');
+      }
+      setOpen(false); setEditing(null); form.resetFields(); load();
+    } catch (e: unknown) {
+      const msg = (e && typeof e === 'object' && 'displayMessage' in e) ? (e as { displayMessage: string }).displayMessage : '操作失敗';
+      message.error(msg);
+    }
   };
+
+  const openEdit = (r: SMTPProfile) => { setEditing(r); form.setFieldsValue(r); setOpen(true); };
+  const openCreate = () => { setEditing(null); form.resetFields(); setOpen(true); };
 
   const onDelete = async (id: string) => {
     await api.del('/smtp-profiles/' + id);
@@ -82,6 +95,7 @@ export default function SMTPSettings() {
       title: '操作', width: 160,
       render: (_: unknown, r: SMTPProfile) => (
         <Space>
+          <Button size="small" onClick={() => openEdit(r)}>編輯</Button>
           <Button size="small" onClick={() => { setTestModal(r.id); setTestEmail(''); }}>測試</Button>
           <Popconfirm title="確定刪除？" onConfirm={() => onDelete(r.id)}>
             <Button size="small" danger>刪除</Button>
@@ -94,11 +108,11 @@ export default function SMTPSettings() {
   return (
     <Card
       title="SMTP 設定"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); form.setFieldValue('mailer_type', 'smtp'); setOpen(true); }}>新增設定</Button>}
+      extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增設定</Button>}
     >
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={{ pageSize: 10 }} />
 
-      <Modal title="新增 SMTP 設定" open={open} onOk={() => form.submit()} onCancel={() => setOpen(false)} width={520} destroyOnHidden>
+      <Modal title={editing ? '編輯 SMTP 設定' : '新增 SMTP 設定'} open={open} onOk={() => form.submit()} onCancel={() => setOpen(false)} width={520} destroyOnHidden>
         <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ mailer_type: 'smtp', port: 587, tls: true }}>
           <Form.Item name="name" label="名稱" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="mailer_type" label={<FieldHelp label="發信方式" tip={tips.smtpType} guideAnchor="smtp" />}>
