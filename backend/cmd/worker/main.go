@@ -119,9 +119,21 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 
 	log.Printf("campaign %d: sending %d emails", campaign.ID, len(results))
 
+	// Create rate limiter based on provider type
+	rl := mailer.NewRateLimiter(smtp.MailerType)
+
 	for i := range results {
 		r := &results[i]
 		if r.Recipient == nil {
+			continue
+		}
+
+		// Check domain rate limit
+		recipientDomain := extractDomain(r.Recipient.Email)
+		if !rl.Wait(recipientDomain) {
+			// Domain hourly limit reached — defer to next cycle
+			log.Printf("campaign %d: domain %s hourly limit reached (%d), deferring %s",
+				campaign.ID, recipientDomain, rl.GetDomainCount(recipientDomain), r.Recipient.Email)
 			continue
 		}
 
@@ -158,16 +170,29 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			log.Printf("campaign %d: failed to send to %s: %v", campaign.ID, r.Recipient.Email, err)
 			r.Status = model.EventError
 			r.ErrorDetail = err.Error()
+			// Retry logic: if transient error, keep as scheduled for next cycle
+			if isTransientError(err) {
+				log.Printf("campaign %d: will retry %s next cycle", campaign.ID, r.Recipient.Email)
+				continue // don't update status, will be picked up again
+			}
 		} else {
 			sentAt := time.Now()
 			r.Status = model.EventSent
 			r.SentAt = &sentAt
 		}
 		database.Save(r)
-
-		// Rate limiting: max 10 emails/second to avoid being flagged
-		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func isTransientError(err error) bool {
+	msg := err.Error()
+	// Common transient SMTP errors
+	for _, code := range []string{"421", "450", "451", "452", "connection reset", "timeout", "throttl"} {
+		if strings.Contains(strings.ToLower(msg), code) {
+			return true
+		}
+	}
+	return false
 }
 
 func extractDomain(email string) string {
