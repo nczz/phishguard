@@ -62,7 +62,7 @@ func (h *Handler) HandleOpen(c *gin.Context) {
 
 func (h *Handler) HandleClick(c *gin.Context) {
 	var result model.Result
-	if err := h.DB.Where("rid = ?", c.Param("rid")).Preload("Campaign").First(&result).Error; err != nil {
+	if err := h.DB.Where("rid = ?", c.Param("rid")).First(&result).Error; err != nil {
 		c.Status(http.StatusNotFound)
 		return
 	}

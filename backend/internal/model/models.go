@@ -172,7 +172,7 @@ type Result struct {
 	CampaignID  int64      `gorm:"not null;index" json:"campaign_id"`
 	TenantID    int64      `gorm:"not null;index" json:"tenant_id"`
 	RecipientID int64      `gorm:"not null" json:"recipient_id"`
-	RID         string     `gorm:"size:36;uniqueIndex;not null" json:"rid"`
+	RID         string     `gorm:"column:rid;size:36;uniqueIndex;not null" json:"rid"`
 	Status      string     `gorm:"size:20;not null;default:pending" json:"status"`
 	SendDate    *time.Time `json:"send_date"`
 	SentAt      *time.Time `json:"sent_at"`
