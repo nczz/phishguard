@@ -36,6 +36,8 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 	{
 		api.GET("/scenarios", h.ListScenarios)
 		api.POST("/scenarios", h.CreateScenario)
+		api.PUT("/scenarios/:id", h.UpdateScenario)
+		api.DELETE("/scenarios/:id", h.DeleteScenario)
 
 		api.GET("/templates", h.ListTemplates)
 		api.POST("/templates", h.CreateTemplate)

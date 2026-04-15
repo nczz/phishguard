@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Badge, Empty, Spin, Typography, Button, Drawer, Form, Input, Select, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Tag, Badge, Empty, Spin, Typography, Button, Drawer, Form, Input, Select, message, Popconfirm, Space } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { Scenario, EmailTemplate, LandingPage } from '../../api/client';
 
@@ -25,6 +25,7 @@ export default function ScenarioList() {
   const [pages, setPages] = useState<LandingPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Scenario | null>(null);
   const [form] = Form.useForm();
 
   const load = () => {
@@ -40,12 +41,31 @@ export default function ScenarioList() {
 
   const onSubmit = async (values: Record<string, unknown>) => {
     try {
-      await api.post('/scenarios', values);
-      message.success('情境建立成功');
+      if (editing) {
+        await api.put(`/scenarios/${editing.id}`, values);
+        message.success('情境已更新');
+      } else {
+        await api.post('/scenarios', values);
+        message.success('情境建立成功');
+      }
       setOpen(false);
+      setEditing(null);
       form.resetFields();
       load();
-    } catch { message.error('建立失敗'); }
+    } catch { message.error('操作失敗'); }
+  };
+
+  const openEdit = (s: Scenario) => {
+    setEditing(s);
+    form.setFieldsValue({ name: s.name, category: s.category, difficulty: s.difficulty, language: s.language, template_id: s.template_id, page_id: s.page_id, education_html: s.education_html });
+    setOpen(true);
+  };
+
+  const openCreate = () => { setEditing(null); form.resetFields(); setOpen(true); };
+
+  const deleteScenario = async (id: number | string) => {
+    try { await api.del(`/scenarios/${id}`); message.success('已刪除'); load(); }
+    catch { message.error('刪除失敗'); }
   };
 
   if (loading) return <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
@@ -54,12 +74,12 @@ export default function ScenarioList() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>情境庫</Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>新增情境</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增情境</Button>
       </div>
 
       {scenarios.length === 0 ? (
         <Empty description="尚無情境">
-          <Button type="primary" onClick={() => setOpen(true)}>建立第一個情境</Button>
+          <Button type="primary" onClick={openCreate}>建立第一個情境</Button>
         </Empty>
       ) : (
         <Row gutter={[16, 16]}>
@@ -75,6 +95,16 @@ export default function ScenarioList() {
                     <Tag color="blue">{s.category}</Tag>
                     {s.tenant_id ? <Tag color="orange">自建</Tag> : <Tag color="purple">平台預建</Tag>}
                   </div>
+                  {s.tenant_id && (
+                    <div style={{ textAlign: 'center', marginTop: 12, borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+                      <Space>
+                        <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(s)}>編輯</Button>
+                        <Popconfirm title="確定刪除此情境？" onConfirm={() => deleteScenario(s.id)}>
+                          <Button size="small" danger icon={<DeleteOutlined />}>刪除</Button>
+                        </Popconfirm>
+                      </Space>
+                    </div>
+                  )}
                 </Card>
               </Badge.Ribbon>
             </Col>
@@ -82,7 +112,7 @@ export default function ScenarioList() {
         </Row>
       )}
 
-      <Drawer title="新增情境" open={open} onClose={() => setOpen(false)} width={520} extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
+      <Drawer title={editing ? '編輯情境' : '新增情境'} open={open} onClose={() => { setOpen(false); setEditing(null); }} width={520} extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
         <Form form={form} layout="vertical" onFinish={onSubmit} initialValues={{ difficulty: 2, language: 'zh-TW', is_active: true }}>
           <Form.Item name="name" label="情境名稱" rules={[{ required: true }]}><Input placeholder="例：密碼到期通知" /></Form.Item>
           <Form.Item name="category" label="分類" rules={[{ required: true }]}><Select options={categories} placeholder="選擇分類" /></Form.Item>
