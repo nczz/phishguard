@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input } from 'antd';
 import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
@@ -39,6 +39,8 @@ export default function RecipientGroups() {
   const [editOpen, setEditOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<Recipient | null>(null);
   const [editForm] = Form.useForm();
+  const [selectedIds, setSelectedIds] = useState<React.Key[]>([]);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   const load = () => {
     api.get<RecipientGroup[]>('/recipient-groups').then(gs => {
@@ -141,6 +143,17 @@ export default function RecipientGroups() {
     catch { message.error('刪除失敗'); }
   };
 
+  const batchDelete = async () => {
+    setBatchDeleting(true);
+    try {
+      await api.post('/recipients/batch-delete', { ids: selectedIds });
+      message.success(`已刪除 ${selectedIds.length} 人`);
+      setSelectedIds([]);
+      load();
+    } catch { message.error('批次刪除失敗'); }
+    setBatchDeleting(false);
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -177,7 +190,16 @@ export default function RecipientGroups() {
       {/* Employee table */}
       <Card title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>員工名單 {deptFilter && <Tag closable onClose={() => setDeptFilter(undefined)}>{deptFilter}</Tag>}</span>
+          <span>
+            員工名單 {deptFilter && <Tag closable onClose={() => setDeptFilter(undefined)}>{deptFilter}</Tag>}
+            {selectedIds.length > 0 && (
+              <Popconfirm title={`確定刪除 ${selectedIds.length} 人？`} onConfirm={batchDelete}>
+                <Button danger size="small" icon={<DeleteOutlined />} loading={batchDeleting} style={{ marginLeft: 8 }}>
+                  刪除已選 ({selectedIds.length})
+                </Button>
+              </Popconfirm>
+            )}
+          </span>
           {departments.length > 0 && (
             <Select allowClear placeholder="篩選部門" style={{ width: 160 }} value={deptFilter} onChange={setDeptFilter}
               options={departments.map(d => ({ value: d, label: d }))} />
@@ -195,6 +217,7 @@ export default function RecipientGroups() {
           </Empty>
         ) : (
           <Table dataSource={filteredRecipients} rowKey="id" size="small" pagination={{ pageSize: 20 }}
+            rowSelection={{ selectedRowKeys: selectedIds, onChange: setSelectedIds }}
             columns={[
               { title: 'Email', dataIndex: 'email', sorter: (a: Recipient, b: Recipient) => a.email.localeCompare(b.email) },
               { title: '姓', dataIndex: 'last_name', width: 80 },

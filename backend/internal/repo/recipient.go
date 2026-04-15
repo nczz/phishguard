@@ -88,3 +88,7 @@ func (r *RecipientRepo) UpdateRecipient(tenantID, id int64, email, firstName, la
 func (r *RecipientRepo) DeleteRecipient(tenantID, id int64) error {
 	return r.DB.Where("tenant_id = ? AND id = ?", tenantID, id).Delete(&model.Recipient{}).Error
 }
+
+func (r *RecipientRepo) BatchDelete(tenantID int64, ids []int64) error {
+	return r.DB.Where("tenant_id = ? AND id IN ?", tenantID, ids).Delete(&model.Recipient{}).Error
+}

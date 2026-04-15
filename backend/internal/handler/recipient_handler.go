@@ -123,3 +123,19 @@ func (h *Handler) DeleteRecipient(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }
+
+func (h *Handler) BatchDeleteRecipients(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	var req struct {
+		IDs []int64 `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.RecipientRepo.BatchDelete(tid, req.IDs); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"deleted": len(req.IDs)})
+}
