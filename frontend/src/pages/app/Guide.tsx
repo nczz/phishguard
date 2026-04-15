@@ -11,6 +11,7 @@ const variables = [
   { var: '{{.Position}}', desc: '收件人的職稱', example: '業務經理' },
   { var: '{{.TrackURL}}', desc: '追蹤連結（必填，放在信件按鈕的 href）', example: 'https://t.phishguard.tw/t/c/abc123' },
   { var: '{{.SubmitURL}}', desc: 'Landing Page 表單提交網址（放在 form action）', example: 'https://t.phishguard.tw/t/s/abc123' },
+  { var: '{{.ReportURL}}', desc: '舉報連結（系統自動注入信件底部，也可手動放置）', example: 'https://t.phishguard.tw/t/r/abc123' },
   { var: '{{.RID}}', desc: '收件人追蹤 ID（系統自動產生）', example: 'abc123-def456' },
 ];
 

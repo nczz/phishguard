@@ -162,10 +162,17 @@ func renderTemplate(html string, recipient *model.Recipient, trackBase, rid stri
 	pixel := fmt.Sprintf(`<img src="%s/t/o/%s" width="1" height="1" style="display:none" />`, trackBase, rid)
 	result += pixel
 
-	// Replace links with tracking URLs (simplified: wrap all href values)
-	// In production, use proper HTML parsing
+	// Replace links with tracking URLs
 	trackClick := fmt.Sprintf("%s/t/c/%s", trackBase, rid)
 	result = replaceAll(result, "{{.TrackURL}}", trackClick)
+
+	// Replace report URL
+	reportURL := fmt.Sprintf("%s/t/r/%s", trackBase, rid)
+	result = replaceAll(result, "{{.ReportURL}}", reportURL)
+
+	// Append report link at bottom
+	reportLink := fmt.Sprintf(`<div style="margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center;">覺得這封信可疑？<a href="%s" style="color:#999;">點此舉報</a></div>`, reportURL)
+	result += reportLink
 
 	return result
 }

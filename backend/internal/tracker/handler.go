@@ -41,6 +41,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	t.GET("/d/:rid/:filename", h.HandleDownload)
 	t.POST("/s/:rid", h.HandleSubmit)
 	t.POST("/r/:rid", h.HandleReport)
+	t.GET("/r/:rid", h.HandleReport)
 	t.GET("/landing", h.HandleLanding)
 }
 
@@ -142,7 +143,14 @@ func (h *Handler) HandleReport(c *gin.Context) {
 	h.DB.Model(&result).Where("reported_at IS NULL").Update("reported_at", now)
 	recordEvent(h.DB, result.ID, result.CampaignID, model.EventReported, c.Request, nil)
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>舉報成功</title>
+<style>body{font-family:-apple-system,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f0f2f5;margin:0}
+.card{background:#fff;padding:48px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;max-width:480px}
+h1{color:#52c41a;margin-bottom:16px}p{color:#666;line-height:1.8}</style></head>
+<body><div class="card"><h1>✅ 感謝您的舉報！</h1>
+<p>您已成功舉報這封可疑信件。<br>這是公司資安團隊發送的<strong>釣魚模擬測試</strong>。</p>
+<p>您的警覺性非常好！能夠辨識並舉報可疑信件，是保護公司資安的重要行為。</p>
+<p style="color:#999;font-size:13px;margin-top:24px;">本測試由 PhishGuard 釣魚模擬平台提供</p></div></body></html>`))
 }
 
 func (h *Handler) HandleLanding(c *gin.Context) {
