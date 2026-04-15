@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/middleware"
@@ -154,4 +155,80 @@ func (h *Handler) BatchDeleteRecipients(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"deleted": len(req.IDs)})
+}
+
+func (h *Handler) ValidateRecipients(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	var results []model.Result
+	h.DB.Where("tenant_id = ?", tid).Find(&results) // just to use tid
+
+	// Get all recipients for this tenant
+	count, _ := h.RecipientRepo.CountByTenant(tid)
+	var recipients []model.Recipient
+	h.DB.Where("tenant_id = ?", tid).Find(&recipients)
+
+	type FilteredItem struct {
+		Email  string `json:"email"`
+		Name   string `json:"name"`
+		Reason string `json:"reason"`
+	}
+
+	filtered := []FilteredItem{}
+	valid := 0
+	for _, r := range recipients {
+		reason := getFilterReason(r.Email)
+		if reason != "" {
+			filtered = append(filtered, FilteredItem{
+				Email:  r.Email,
+				Name:   r.LastName + r.FirstName,
+				Reason: reason,
+			})
+		} else {
+			valid++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":    count,
+		"valid":    valid,
+		"filtered": filtered,
+	})
+}
+
+func getFilterReason(email string) string {
+	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		return "無效的 email 格式"
+	}
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "無效的 email 格式"
+	}
+	domain := strings.ToLower(parts[1])
+
+	blockedDomains := map[string]string{
+		"gmail.com": "公共信箱（Gmail）", "yahoo.com": "公共信箱（Yahoo）",
+		"hotmail.com": "公共信箱（Hotmail）", "outlook.com": "公共信箱（Outlook）",
+		"aol.com": "公共信箱（AOL）", "icloud.com": "公共信箱（iCloud）",
+		"mail.com": "公共信箱", "protonmail.com": "公共信箱（ProtonMail）",
+		"zoho.com": "公共信箱（Zoho）", "yandex.com": "公共信箱（Yandex）",
+		"gmx.com": "公共信箱（GMX）", "live.com": "公共信箱（Live）",
+	}
+	if reason, ok := blockedDomains[domain]; ok {
+		return reason + " — 釣魚測試僅限企業域名"
+	}
+
+	roleAddresses := map[string]string{
+		"abuse@": "角色信箱（abuse）", "postmaster@": "角色信箱（postmaster）",
+		"hostmaster@": "角色信箱", "webmaster@": "角色信箱",
+		"noc@": "角色信箱", "security@": "角色信箱",
+		"mailer-daemon@": "系統信箱", "admin@": "角色信箱（admin）",
+	}
+	lower := strings.ToLower(email)
+	for prefix, reason := range roleAddresses {
+		if strings.HasPrefix(lower, prefix) {
+			return reason + " — 不應作為釣魚測試對象"
+		}
+	}
+
+	return ""
 }

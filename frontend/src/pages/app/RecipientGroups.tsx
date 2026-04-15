@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input, Tooltip } from 'antd';
+import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input, Tooltip, Alert } from 'antd';
 import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { tips } from '../../components/FieldHelp';
 import { api } from '../../api/client';
@@ -42,6 +42,7 @@ export default function RecipientGroups() {
   const [editForm] = Form.useForm();
   const [selectedIds, setSelectedIds] = useState<React.Key[]>([]);
   const [batchDeleting, setBatchDeleting] = useState(false);
+  const [filteredEmails, setFilteredEmails] = useState<{email: string; name: string; reason: string}[]>([]);
 
   const load = () => {
     api.get<RecipientGroup[]>('/recipient-groups').then(gs => {
@@ -49,6 +50,9 @@ export default function RecipientGroups() {
       const all = gs.flatMap(g => g.recipients ?? []);
       setAllRecipients(all);
     });
+    api.get<{total: number; valid: number; filtered: {email: string; name: string; reason: string}[]}>('/recipients/validate')
+      .then(r => setFilteredEmails(r.filtered))
+      .catch(() => {});
   };
 
   useEffect(load, []);
@@ -170,6 +174,23 @@ export default function RecipientGroups() {
           <Tooltip title={tips.csvFormat}><QuestionCircleOutlined style={{color:'#999',marginLeft:4}} /></Tooltip>
         </Space>
       </div>
+
+      {/* Filtered emails warning */}
+      {filteredEmails.length > 0 && (
+        <Alert type="warning" showIcon style={{ marginBottom: 16 }}
+          title={`${filteredEmails.length} 位收件人將在發送時被過濾`}
+          description={
+            <div>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>以下收件人不符合發送規範，釣魚測試發送時會自動跳過（名單仍保留，僅供參考）：</Typography.Text>
+              <Table size="small" pagination={false} style={{ marginTop: 8 }} dataSource={filteredEmails} rowKey="email" columns={[
+                { title: 'Email', dataIndex: 'email', width: 250 },
+                { title: '姓名', dataIndex: 'name', width: 100 },
+                { title: '原因', dataIndex: 'reason', render: (v: string) => <Tag color="orange">{v}</Tag> },
+              ]} />
+            </div>
+          }
+        />
+      )}
 
       {/* Department overview */}
       {deptStats.length > 0 && (
