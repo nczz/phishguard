@@ -19,7 +19,8 @@ type CreateCampaignRequest struct {
 	GroupIDs      []int64    `json:"group_ids"`
 	PhishURL      string     `json:"phish_url"`
 	SendBy        *time.Time `json:"send_by"`
-	SelectionMode string     `json:"selection_mode"` // all, random, department
+	SpreadSend    bool       `json:"spread_send"`
+	SelectionMode string     `json:"selection_mode"`
 	SamplePercent int        `json:"sample_percent"`
 	Departments   []string   `json:"departments"`
 }
@@ -44,6 +45,13 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 		pageID = sc.PageID
 	}
 
+	// If spread send enabled and no explicit SendBy, spread over 8 hours
+	sendBy := req.SendBy
+	if req.SpreadSend && sendBy == nil {
+		t := time.Now().Add(8 * time.Hour)
+		sendBy = &t
+	}
+
 	c := &model.Campaign{
 		TenantID:      tenantID,
 		Name:          req.Name,
@@ -53,7 +61,7 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 		PageID:        pageID,
 		SMTPProfileID: req.SMTPProfileID,
 		PhishURL:      req.PhishURL,
-		SendBy:        req.SendBy,
+		SendBy:        sendBy,
 		SelectionMode: req.SelectionMode,
 		SamplePercent: req.SamplePercent,
 		Departments:   req.Departments,
@@ -126,12 +134,17 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 
 	// Build results with spread send dates
 	now := time.Now()
+	// Shuffle recipients for more natural send order
+	rand.Shuffle(len(recipients), func(i, j int) { recipients[i], recipients[j] = recipients[j], recipients[i] })
 	results := make([]model.Result, len(recipients))
 	for i, r := range recipients {
 		sendDate := now
 		if c.SendBy != nil && c.SendBy.After(now) && len(recipients) > 1 {
+			// Spread evenly between now and SendBy, with small random jitter
 			interval := c.SendBy.Sub(now)
-			sendDate = now.Add(interval * time.Duration(i) / time.Duration(len(recipients)-1))
+			base := now.Add(interval * time.Duration(i) / time.Duration(len(recipients)-1))
+			jitter := time.Duration(rand.Intn(60)) * time.Second // ±60s jitter
+			sendDate = base.Add(jitter)
 		}
 		results[i] = model.Result{
 			CampaignID:  campaignID,
