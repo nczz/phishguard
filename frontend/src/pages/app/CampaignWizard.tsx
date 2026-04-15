@@ -330,12 +330,14 @@ export default function CampaignWizard() {
             </Descriptions>
           </Card>
 
-          <Input
-            addonBefore="測試名稱"
-            value={campaignName}
-            onChange={e => setCampaignName(e.target.value)}
-            style={{ marginBottom: 16, maxWidth: 500 }}
-          />
+          <div style={{ marginBottom: 16, maxWidth: 500 }}>
+            <Text strong style={{ marginRight: 8 }}>測試名稱</Text>
+            <Input
+              value={campaignName}
+              onChange={e => setCampaignName(e.target.value)}
+              style={{ width: 300 }}
+            />
+          </div>
 
           {scenarioObj?.template?.html_body && (
             <>
