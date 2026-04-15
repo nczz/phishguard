@@ -1,156 +1,198 @@
-import { useEffect, useState } from 'react';
-import { Card, Table, Modal, Form, Input, Button, Tabs, Space, Empty, Typography, message, Spin } from 'antd';
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { useEffect, useState, useMemo } from 'react';
+import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space } from 'antd';
+import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
 
-const recipientColumns = [
-  { title: 'Email', dataIndex: 'email' },
-  { title: '名', dataIndex: 'first_name' },
-  { title: '姓', dataIndex: 'last_name' },
-  { title: '部門', dataIndex: 'department' },
-  { title: '職稱', dataIndex: 'position' },
-];
+const CSV_TEMPLATE = `email,first_name,last_name,department,position
+wang@example.com,王,小明,業務部,業務經理
+chen@example.com,陳,小華,財務部,會計
+lin@example.com,林,小美,研發部,工程師
+`;
+
+interface ParsedRow { email: string; first_name: string; last_name: string; department: string; position: string }
+
+function parseCSV(text: string): ParsedRow[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+  const ei = header.indexOf('email');
+  const fi = header.indexOf('first_name');
+  const li = header.indexOf('last_name');
+  const di = header.indexOf('department');
+  const pi = header.indexOf('position');
+  if (ei < 0) { message.error('CSV 必須包含 email 欄位'); return []; }
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const cols = line.split(',').map(c => c.trim());
+    return { email: cols[ei] || '', first_name: cols[fi] ?? '', last_name: cols[li] ?? '', department: cols[di] ?? '', position: cols[pi] ?? '' };
+  }).filter(r => r.email.includes('@'));
+}
 
 export default function RecipientGroups() {
   const [groups, setGroups] = useState<RecipientGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<RecipientGroup | null>(null);
-  const [newOpen, setNewOpen] = useState(false);
+  const [allRecipients, setAllRecipients] = useState<Recipient[]>([]);
   const [importOpen, setImportOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [jsonText, setJsonText] = useState('');
-  const [importTab, setImportTab] = useState('json');
-  const [form] = Form.useForm();
+  const [parsed, setParsed] = useState<ParsedRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [deptFilter, setDeptFilter] = useState<string | undefined>();
 
-  const fetchGroups = () => {
-    setLoading(true);
-    api.get<RecipientGroup[]>('/recipient-groups').then(setGroups).finally(() => setLoading(false));
-  };
-
-  useEffect(fetchGroups, []);
-
-  const selectGroup = (g: RecipientGroup) => {
-    api.get<RecipientGroup[]>('/recipient-groups').then((all) => {
-      const found = all.find((x) => x.id === g.id);
-      setSelected(found ?? g);
+  const load = () => {
+    api.get<RecipientGroup[]>('/recipient-groups').then(gs => {
+      setGroups(gs);
+      const all = gs.flatMap(g => g.recipients ?? []);
+      setAllRecipients(all);
     });
   };
 
-  const handleCreate = async () => {
-    if (!newName.trim()) return;
-    await api.post('/recipient-groups', { name: newName.trim() });
-    message.success('群組已建立');
-    setNewOpen(false);
-    setNewName('');
-    fetchGroups();
+  useEffect(load, []);
+
+  // Department stats
+  const deptStats = useMemo(() => {
+    const map = new Map<string, number>();
+    allRecipients.forEach(r => { const d = r.department || '未分類'; map.set(d, (map.get(d) || 0) + 1); });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [allRecipients]);
+
+  const departments = useMemo(() => deptStats.map(([d]) => d), [deptStats]);
+
+  const filteredRecipients = useMemo(() => {
+    if (!deptFilter) return allRecipients;
+    return allRecipients.filter(r => (r.department || '未分類') === deptFilter);
+  }, [allRecipients, deptFilter]);
+
+  // CSV template download
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'phishguard_員工名單範本.csv'; a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleImport = async () => {
-    let recipients: Omit<Recipient, 'id'>[];
-    if (importTab === 'json') {
-      try {
-        recipients = JSON.parse(jsonText);
-        if (!Array.isArray(recipients)) throw new Error();
-      } catch {
-        message.error('JSON 格式錯誤');
-        return;
+  // File upload handler
+  const handleFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = parseCSV(text);
+      if (rows.length === 0) { message.error('無法解析 CSV 或沒有有效資料'); return; }
+      setParsed(rows);
+      setImportOpen(true);
+    };
+    reader.readAsText(file);
+    return false; // prevent auto upload
+  };
+
+  // Import confirmed
+  const doImport = async () => {
+    if (parsed.length === 0) return;
+    setImporting(true);
+    try {
+      // Create or find the "全公司" group
+      let group = groups.find(g => g.name === '全公司');
+      if (!group) {
+        group = await api.post<RecipientGroup>('/recipient-groups', { name: '全公司' });
       }
-    } else {
-      const values = await form.validateFields();
-      recipients = [values];
-    }
-    const res = await api.post<{ count: number }>('/recipient-groups/import', {
-      group_id: selected!.id,
-      recipients,
-    });
-    message.success(`成功匯入 ${res.count ?? recipients.length} 筆收件人`);
-    setImportOpen(false);
-    setJsonText('');
-    form.resetFields();
-    selectGroup(selected!);
-    fetchGroups();
+      await api.post('/recipient-groups/import', { group_id: group.id, recipients: parsed });
+      message.success(`成功匯入 ${parsed.length} 位員工`);
+      setImportOpen(false);
+      setParsed([]);
+      load();
+    } catch { message.error('匯入失敗'); }
+    setImporting(false);
   };
 
-  if (loading) return <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
+  // Preview table columns
+  const previewDepts = useMemo(() => {
+    const map = new Map<string, number>();
+    parsed.forEach(r => { const d = r.department || '未分類'; map.set(d, (map.get(d) || 0) + 1); });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [parsed]);
 
   return (
     <div>
-      <Typography.Title level={3}>收件人管理</Typography.Title>
-      <div style={{ display: 'flex', gap: 16 }}>
-        {/* Left: group list */}
-        <Card style={{ width: 320, flexShrink: 0 }} title="群組" extra={<Button icon={<PlusOutlined />} size="small" onClick={() => setNewOpen(true)}>新增群組</Button>}>
-          {groups.length === 0 ? (
-            <Empty description="尚無群組" />
-          ) : (
-            <div>
-              {groups.map((g) => (
-                <div key={g.id} onClick={() => selectGroup(g)} style={{ cursor: 'pointer', background: selected?.id === g.id ? '#e6f4ff' : undefined, padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                  <div style={{ fontWeight: 500 }}>{g.name}</div>
-                  <div style={{ fontSize: 12, color: '#999' }}>{g.recipients?.length ?? 0} 位收件人</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Right: detail */}
-        <Card style={{ flex: 1 }}>
-          {selected ? (
-            <>
-              <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
-                <Typography.Title level={4} style={{ margin: 0 }}>{selected.name}</Typography.Title>
-                <Button icon={<UploadOutlined />} onClick={() => setImportOpen(true)}>匯入收件人</Button>
-              </Space>
-              <Table
-                rowKey="id"
-                columns={recipientColumns}
-                dataSource={selected.recipients ?? []}
-                pagination={{ pageSize: 10 }}
-              />
-            </>
-          ) : (
-            <Empty description="請選擇一個群組" />
-          )}
-        </Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Typography.Title level={3} style={{ margin: 0 }}>收件人管理</Typography.Title>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>下載 CSV 範本</Button>
+          <Upload accept=".csv,.txt" showUploadList={false} beforeUpload={handleFile}>
+            <Button type="primary" icon={<UploadOutlined />}>匯入員工名單</Button>
+          </Upload>
+        </Space>
       </div>
 
-      {/* New group modal */}
-      <Modal title="新增群組" open={newOpen} onOk={handleCreate} onCancel={() => setNewOpen(false)} okText="建立">
-        <Input placeholder="群組名稱" value={newName} onChange={(e) => setNewName(e.target.value)} />
-      </Modal>
+      {/* Department overview */}
+      {deptStats.length > 0 && (
+        <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
+          <Col xs={12} sm={6}>
+            <Card size="small"><Statistic title="總人數" value={allRecipients.length} prefix={<TeamOutlined />} /></Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small"><Statistic title="部門數" value={deptStats.length} /></Card>
+          </Col>
+          {deptStats.slice(0, 4).map(([dept, count]) => (
+            <Col xs={12} sm={6} key={dept}>
+              <Card size="small" hoverable onClick={() => setDeptFilter(deptFilter === dept ? undefined : dept)}
+                style={{ borderColor: deptFilter === dept ? '#1677ff' : undefined }}>
+                <Statistic title={dept} value={count} suffix="人" />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
 
-      {/* Import modal */}
-      <Modal title="匯入收件人" open={importOpen} onOk={handleImport} onCancel={() => setImportOpen(false)} okText="匯入" width={600}>
-        <Tabs activeKey={importTab} onChange={setImportTab} items={[
-          {
-            key: 'json',
-            label: 'JSON 匯入',
-            children: (
-              <Input.TextArea
-                rows={8}
-                placeholder='[{"email":"a@b.com","first_name":"","last_name":"","department":"","position":""}]'
-                value={jsonText}
-                onChange={(e) => setJsonText(e.target.value)}
-              />
-            ),
-          },
-          {
-            key: 'form',
-            label: '表單新增',
-            children: (
-              <Form form={form} layout="vertical">
-                <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-                  <Input />
-                </Form.Item>
-                <Form.Item name="first_name" label="名"><Input /></Form.Item>
-                <Form.Item name="last_name" label="姓"><Input /></Form.Item>
-                <Form.Item name="department" label="部門"><Input /></Form.Item>
-                <Form.Item name="position" label="職稱"><Input /></Form.Item>
-              </Form>
-            ),
-          },
-        ]} />
+      {/* Employee table */}
+      <Card title={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>員工名單 {deptFilter && <Tag closable onClose={() => setDeptFilter(undefined)}>{deptFilter}</Tag>}</span>
+          {departments.length > 0 && (
+            <Select allowClear placeholder="篩選部門" style={{ width: 160 }} value={deptFilter} onChange={setDeptFilter}
+              options={departments.map(d => ({ value: d, label: d }))} />
+          )}
+        </div>
+      }>
+        {allRecipients.length === 0 ? (
+          <Empty description="尚未匯入員工名單" image={<InboxOutlined style={{ fontSize: 48, color: '#ccc' }} />}>
+            <Space>
+              <Button onClick={downloadTemplate}>下載 CSV 範本</Button>
+              <Upload accept=".csv,.txt" showUploadList={false} beforeUpload={handleFile}>
+                <Button type="primary">匯入第一份名單</Button>
+              </Upload>
+            </Space>
+          </Empty>
+        ) : (
+          <Table dataSource={filteredRecipients} rowKey="id" size="small" pagination={{ pageSize: 20 }}
+            columns={[
+              { title: 'Email', dataIndex: 'email', sorter: (a: Recipient, b: Recipient) => a.email.localeCompare(b.email) },
+              { title: '姓', dataIndex: 'last_name', width: 80 },
+              { title: '名', dataIndex: 'first_name', width: 80 },
+              { title: '部門', dataIndex: 'department', width: 120, render: (d: string) => <Tag>{d || '未分類'}</Tag>,
+                filters: departments.map(d => ({ text: d, value: d })), onFilter: (v: unknown, r: Recipient) => r.department === v },
+              { title: '職稱', dataIndex: 'position', width: 120 },
+            ]}
+          />
+        )}
+      </Card>
+
+      {/* Import preview modal */}
+      <Modal title="確認匯入" open={importOpen} onCancel={() => setImportOpen(false)} width={800}
+        onOk={doImport} okText={`確認匯入 ${parsed.length} 人`} confirmLoading={importing}>
+        <div style={{ marginBottom: 16 }}>
+          <Typography.Text>解析到 <strong>{parsed.length}</strong> 位員工，分佈在 <strong>{previewDepts.length}</strong> 個部門：</Typography.Text>
+          <div style={{ marginTop: 8 }}>
+            {previewDepts.map(([dept, count]) => (
+              <Tag key={dept} color="blue" style={{ marginBottom: 4 }}>{dept}: {count} 人</Tag>
+            ))}
+          </div>
+        </div>
+        <Table dataSource={parsed} rowKey="email" size="small" pagination={{ pageSize: 10 }}
+          columns={[
+            { title: 'Email', dataIndex: 'email' },
+            { title: '姓', dataIndex: 'last_name', width: 80 },
+            { title: '名', dataIndex: 'first_name', width: 80 },
+            { title: '部門', dataIndex: 'department', width: 120 },
+            { title: '職稱', dataIndex: 'position', width: 120 },
+          ]}
+        />
       </Modal>
     </div>
   );
