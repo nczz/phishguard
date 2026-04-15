@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -122,6 +123,16 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 		trackBase := cfg.TrackerBaseURL
 		htmlBody := renderTemplate(tmpl.HTMLBody, r.Recipient, trackBase, rid)
 
+		// Compliance headers
+		reportURL := fmt.Sprintf("%s/t/r/%s", trackBase, rid)
+		headers := map[string]string{
+			"List-Unsubscribe":      "<" + reportURL + ">",
+			"List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+			"X-Mailer":              "PhishGuard/1.0",
+			"Precedence":            "bulk",
+			"Message-ID":            fmt.Sprintf("<%s@%s>", rid, extractDomain(smtp.FromAddress)),
+		}
+
 		msg := &mailer.Message{
 			From:     smtp.FromAddress,
 			FromName: smtp.FromName,
@@ -129,6 +140,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			Subject:  tmpl.Subject,
 			HTMLBody: htmlBody,
 			TextBody: tmpl.TextBody,
+			Headers:  headers,
 		}
 
 		if err := m.Send(context.Background(), msg); err != nil {
@@ -141,7 +153,18 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			r.SentAt = &sentAt
 		}
 		database.Save(r)
+
+		// Rate limiting: max 10 emails/second to avoid being flagged
+		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func extractDomain(email string) string {
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return "phishguard.local"
 }
 
 func renderTemplate(html string, recipient *model.Recipient, trackBase, rid string) string {
