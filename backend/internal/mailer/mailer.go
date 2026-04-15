@@ -118,9 +118,10 @@ func (m *MailgunMailer) Name() string { return "mailgun" }
 func (m *MailgunMailer) Send(ctx context.Context, msg *Message) error {
 	mg := mailgun.NewMailgun(m.Domain, m.APIKey)
 
-	from := msg.From
-	if msg.FromName != "" {
-		from = fmt.Sprintf("%s <%s>", msg.FromName, msg.From)
+	// Mailgun requires "Name <email>" format
+	from := fmt.Sprintf("%s <%s>", msg.FromName, msg.From)
+	if msg.FromName == "" {
+		from = fmt.Sprintf("%s <%s>", msg.From, msg.From)
 	}
 
 	message := mg.NewMessage(from, msg.Subject, msg.TextBody, msg.To)
