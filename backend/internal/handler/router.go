@@ -78,6 +78,9 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.GET("/campaigns", h.ListCampaigns)
 		api.GET("/campaigns/:id", h.GetCampaign)
 		api.POST("/campaigns/:id/launch", h.LaunchCampaign)
+		api.POST("/campaigns/:id/pause", h.PauseCampaign)
+		api.POST("/campaigns/:id/resume", h.ResumeCampaign)
+		api.POST("/campaigns/:id/stop", h.StopCampaign)
 		api.DELETE("/campaigns/:id", h.DeleteCampaign)
 
 		api.GET("/campaigns/:id/report", h.GetCampaignReport)

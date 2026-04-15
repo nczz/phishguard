@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Table, Typography, message,
+  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Table, Typography, message, Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, DownloadOutlined, FilePdfOutlined, MailOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined, FilePdfOutlined, MailOutlined, PauseCircleOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   Cell, ResponsiveContainer,
@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { api, type Campaign, type CampaignReport, type DepartmentStat, type RecipientResult } from '../../api/client';
 
 const STATUS_COLOR: Record<string, string> = {
-  draft: 'default', scheduled: 'processing', sending: 'blue', completed: 'success', cancelled: 'error',
+  draft: 'default', scheduled: 'processing', sending: 'blue', paused: 'warning', completed: 'success', cancelled: 'error',
 };
 
 const FUNNEL_COLORS = ['#1677ff', '#13c2c2', '#faad14', '#ff4d4f', '#52c41a'];
@@ -56,7 +56,7 @@ export default function CampaignDetail() {
 
   // Auto-refresh every 30s while sending
   useEffect(() => {
-    if (campaign?.status !== 'sending') return;
+    if (campaign?.status !== 'sending' && campaign?.status !== 'paused') return;
     const timer = setInterval(fetchData, 30_000);
     return () => clearInterval(timer);
   }, [campaign?.status, fetchData]);
@@ -188,6 +188,7 @@ export default function CampaignDetail() {
             </Col>
             <Col>
               {campaign.status === 'sending' && <Tag color="processing">發送中 — 每 30 秒自動更新</Tag>}
+              {campaign.status === 'paused' && <Tag color="warning">已暫停</Tag>}
               {campaign.status === 'completed' && <Tag color="success">已完成</Tag>}
               {campaign.status === 'draft' && <Tag>草稿</Tag>}
               {campaign.status === 'scheduled' && <Tag color="orange">排程中</Tag>}
@@ -267,7 +268,25 @@ export default function CampaignDetail() {
       </Card>
 
       {/* Section 4: Actions */}
-      <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {campaign.status === 'sending' && (
+          <>
+            <Popconfirm title="確定暫停？未發送的信件將保留排程。" onConfirm={async () => { await api.post('/campaigns/' + id + '/pause'); message.success('已暫停'); fetchData(); }}>
+              <Button icon={<PauseCircleOutlined />} type="primary" ghost>暫停發送</Button>
+            </Popconfirm>
+            <Popconfirm title="確定終止？未發送的信件將被取消，無法恢復。" onConfirm={async () => { await api.post('/campaigns/' + id + '/stop'); message.success('已終止'); fetchData(); }}>
+              <Button icon={<StopOutlined />} danger>終止活動</Button>
+            </Popconfirm>
+          </>
+        )}
+        {campaign.status === 'paused' && (
+          <>
+            <Button icon={<PlayCircleOutlined />} type="primary" onClick={async () => { await api.post('/campaigns/' + id + '/resume'); message.success('已恢復'); fetchData(); }}>恢復發送</Button>
+            <Popconfirm title="確定終止？未發送的信件將被取消。" onConfirm={async () => { await api.post('/campaigns/' + id + '/stop'); message.success('已終止'); fetchData(); }}>
+              <Button icon={<StopOutlined />} danger>終止活動</Button>
+            </Popconfirm>
+          </>
+        )}
         <Button icon={<DownloadOutlined />} onClick={exportCSV}>匯出 CSV</Button>
         <Button icon={<FilePdfOutlined />} onClick={exportPDF}>匯出 PDF</Button>
         {campaign.status === 'completed' && <Button icon={<MailOutlined />} onClick={sendReport}>寄送報表</Button>}
