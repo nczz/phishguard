@@ -78,7 +78,7 @@ export default function CampaignWizard() {
 
   // Derived
   const allRecipients = useMemo(
-    () => groups.filter(g => selectedGroups.includes(g.id)).flatMap(g => g.recipients ?? []),
+    () => groups.filter(g => selectedGroups.includes(String(g.id))).flatMap(g => g.recipients ?? []),
     [groups, selectedGroups],
   );
 
