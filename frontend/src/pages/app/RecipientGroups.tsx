@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input } from 'antd';
-import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input, Tooltip } from 'antd';
+import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { tips } from '../../components/FieldHelp';
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
 
@@ -164,6 +165,7 @@ export default function RecipientGroups() {
           <Upload accept=".csv,.txt" showUploadList={false} beforeUpload={handleFile}>
             <Button type="primary" icon={<UploadOutlined />}>匯入員工名單</Button>
           </Upload>
+          <Tooltip title={tips.csvFormat}><QuestionCircleOutlined style={{color:'#999',marginLeft:4}} /></Tooltip>
         </Space>
       </div>
 

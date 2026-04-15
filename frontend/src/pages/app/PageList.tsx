@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Table, Button, Drawer, Form, Input, Switch, message, Tag, Popconfirm, Space, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
+import FieldHelp, { tips } from '../../components/FieldHelp';
 import type { LandingPage } from '../../api/client';
 
 export default function PageList() {
@@ -57,10 +58,10 @@ export default function PageList() {
         extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
         <Form form={form} layout="vertical" onFinish={onSubmit} initialValues={{ capture_credentials: true }}>
           <Form.Item name="name" label="頁面名稱" rules={[{ required: true }]}><Input placeholder="例：仿公司登入頁" /></Form.Item>
-          <Form.Item name="capture_credentials" label="擷取表單資料" valuePropName="checked"><Switch checkedChildren="是" unCheckedChildren="否" /></Form.Item>
-          <Form.Item name="capture_fields" label="擷取欄位（JSON 陣列）"><Input placeholder='["email","password"]' /></Form.Item>
+          <Form.Item name="capture_credentials" label={<FieldHelp label="擷取表單資料" tip="開啟後系統會記錄收件人在此頁面提交的表單欄位名稱" />} valuePropName="checked"><Switch checkedChildren="是" unCheckedChildren="否" /></Form.Item>
+          <Form.Item name="capture_fields" label={<FieldHelp label="擷取欄位" tip={tips.captureFields} />}><Input placeholder='["email","password"]' /></Form.Item>
           <Form.Item name="redirect_url" label="提交後導向網址（選填）"><Input placeholder="https://www.google.com" /></Form.Item>
-          <Form.Item name="html" label="頁面 HTML" rules={[{ required: true }]}>
+          <Form.Item name="html" label={<FieldHelp label="頁面 HTML" tip={tips.submitURL} guideAnchor="variables" />} rules={[{ required: true }]}>
             <Input.TextArea rows={16} placeholder={'<!DOCTYPE html>\n<html>\n<body>\n  <form action="{{.SubmitURL}}" method="POST">\n    <input name="email" placeholder="Email" />\n    <input name="password" type="password" placeholder="密碼" />\n    <button type="submit">登入</button>\n  </form>\n</body>\n</html>'} />
           </Form.Item>
           <Typography.Text type="secondary">

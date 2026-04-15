@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Table, Tag, Button, Modal, Form, Input, InputNumber, Radio, Checkbox, Space, Popconfirm, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import FieldHelp, { tips } from '../../components/FieldHelp';
 import { api } from '../../api/client';
 import type { SMTPProfile } from '../../api/client';
 
@@ -74,7 +75,7 @@ export default function SMTPSettings() {
       <Modal title="新增 SMTP 設定" open={open} onOk={() => form.submit()} onCancel={() => setOpen(false)} width={520} destroyOnHidden>
         <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ mailer_type: 'smtp', port: 587, tls: true }}>
           <Form.Item name="name" label="名稱" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="mailer_type" label="類型">
+          <Form.Item name="mailer_type" label={<FieldHelp label="發信方式" tip={tips.smtpType} guideAnchor="smtp" />}>
             <Radio.Group>
               <Radio.Button value="smtp">SMTP</Radio.Button>
               <Radio.Button value="mailgun">Mailgun</Radio.Button>
@@ -105,7 +106,7 @@ export default function SMTPSettings() {
             </>
           )}
 
-          <Form.Item name="from_address" label="寄件地址" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="from_address" label={<FieldHelp label="寄件地址" tip="收件人看到的寄件者 email 地址，建議使用公司域名" />} rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="from_name" label="寄件人名稱"><Input /></Form.Item>
         </Form>
       </Modal>

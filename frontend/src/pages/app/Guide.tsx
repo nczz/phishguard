@@ -25,7 +25,7 @@ export default function Guide() {
 
       <Steps direction="vertical" current={-1} items={[
         {
-          title: <Text strong>Step 1：設定發信機制</Text>,
+          title: <Text strong id="smtp">Step 1：設定發信機制</Text>,
           icon: <SettingOutlined />,
           description: (
             <Card size="small" style={{ marginTop: 8, marginBottom: 16 }}>
@@ -51,7 +51,7 @@ export default function Guide() {
           ),
         },
         {
-          title: <Text strong>Step 3：瀏覽情境庫</Text>,
+          title: <Text strong id="scenarios">Step 3：瀏覽情境庫</Text>,
           icon: <AppstoreOutlined />,
           description: (
             <Card size="small" style={{ marginTop: 8, marginBottom: 16 }}>
@@ -99,7 +99,7 @@ export default function Guide() {
 
       <Divider />
 
-      <Title level={4}>📝 模板變數參考</Title>
+      <Title level={4} id="variables">📝 模板變數參考</Title>
       <Paragraph type="secondary">在信件模板和 Landing Page 中可使用以下變數，系統會自動替換為收件人的實際資料：</Paragraph>
       <Table dataSource={variables} rowKey="var" size="small" pagination={false} columns={[
         { title: '變數', dataIndex: 'var', width: 180, render: (v: string) => <Tag color="blue" style={{ fontFamily: 'monospace' }}>{v}</Tag> },
@@ -113,7 +113,7 @@ export default function Guide() {
 
       <Divider />
 
-      <Title level={4}>📊 追蹤指標說明</Title>
+      <Title level={4} id="metrics">📊 追蹤指標說明</Title>
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {[
           { label: '寄達', color: '#1677ff', desc: '信件成功送達收件人信箱' },

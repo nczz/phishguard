@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, Row, Col, Tag, Badge, Empty, Spin, Typography, Button, Drawer, Form, Input, Select, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
+import FieldHelp, { tips } from '../../components/FieldHelp';
 import type { Scenario, EmailTemplate, LandingPage } from '../../api/client';
 
 const categoryEmoji: Record<string, string> = {
@@ -116,19 +117,19 @@ export default function ScenarioList() {
 
       <Drawer title={editing ? '編輯情境' : '新增情境'} open={open} onClose={() => { setOpen(false); setEditing(null); }} width={520} extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
         <Form form={form} layout="vertical" onFinish={onSubmit} initialValues={{ difficulty: 2, language: 'zh-TW', is_active: true }}>
-          <Form.Item name="name" label="情境名稱" rules={[{ required: true }]}><Input placeholder="例：密碼到期通知" /></Form.Item>
+          <Form.Item name="name" label={<FieldHelp label="情境名稱" tip={tips.scenario} guideAnchor="scenarios" />} rules={[{ required: true }]}><Input placeholder="例：密碼到期通知" /></Form.Item>
           <Form.Item name="category" label="分類" rules={[{ required: true }]}><Select options={categories} placeholder="選擇分類" /></Form.Item>
-          <Form.Item name="difficulty" label="難度" rules={[{ required: true }]}>
+          <Form.Item name="difficulty" label={<FieldHelp label="難度" tip={tips.difficulty} />} rules={[{ required: true }]}>
             <Select options={[{ value: 1, label: '⭐ 簡單' }, { value: 2, label: '⭐⭐ 中等' }, { value: 3, label: '⭐⭐⭐ 困難' }]} />
           </Form.Item>
           <Form.Item name="language" label="語言"><Select options={[{ value: 'zh-TW', label: '繁體中文' }, { value: 'en', label: 'English' }]} /></Form.Item>
-          <Form.Item name="template_id" label="信件模板" rules={[{ required: true, message: '請先建立模板再選擇' }]}>
+          <Form.Item name="template_id" label={<FieldHelp label="信件模板" tip={tips.templateVars} guideAnchor="variables" />} rules={[{ required: true, message: '請先建立模板再選擇' }]}>
             <Select placeholder={templates.length ? '選擇模板' : '請先到模板管理建立模板'} options={templates.map(t => ({ value: t.id, label: `${t.name} — ${t.subject}` }))} />
           </Form.Item>
-          <Form.Item name="page_id" label="Landing Page" rules={[{ required: true, message: '請先建立 Landing Page' }]}>
+          <Form.Item name="page_id" label={<FieldHelp label="Landing Page" tip={tips.submitURL} guideAnchor="variables" />} rules={[{ required: true, message: '請先建立 Landing Page' }]}>
             <Select placeholder={pages.length ? '選擇 Landing Page' : '請先到模板管理建立頁面'} options={pages.map(p => ({ value: p.id, label: p.name }))} />
           </Form.Item>
-          <Form.Item name="education_html" label="教育頁內容 (HTML)" rules={[{ required: true }]}>
+          <Form.Item name="education_html" label={<FieldHelp label="教育頁內容 (HTML)" tip={tips.educationHTML} guideAnchor="metrics" />} rules={[{ required: true }]}>
             <Input.TextArea rows={6} placeholder="<h1>這是一封釣魚測試信</h1><p>以下是辨識方法...</p>" />
           </Form.Item>
           <Button type="dashed" block style={{ marginBottom: 16 }} onClick={() => { setPreviewHtml(form.getFieldValue('education_html') || ''); setPreviewOpen(true); }}>👁 預覽教育頁</Button>

@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Steps, Card, Row, Col, Button, Checkbox, Radio, Slider, Input,
-  Tag, Modal, Spin, Typography, message, Space, Alert, Descriptions,
+  Tag, Modal, Spin, Typography, message, Space, Alert, Descriptions, Tooltip,
 } from 'antd';
-import { RocketOutlined, EyeOutlined } from '@ant-design/icons';
+import { RocketOutlined, EyeOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { tips } from '../../components/FieldHelp';
 import type { Scenario, RecipientGroup, SMTPProfile, Campaign } from '../../api/client';
 import { api } from '../../api/client';
 
@@ -198,9 +199,9 @@ export default function CampaignWizard() {
             style={{ marginBottom: 16 }}
           >
             <Space orientation="vertical">
-              <Radio value="all">全公司（共 {allRecipients.length} 人）</Radio>
-              <Radio value="department">指定部門</Radio>
-              <Radio value="sample">隨機抽樣</Radio>
+              <Radio value="all">全公司（共 {allRecipients.length} 人） <Tooltip title={tips.selectionAll}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
+              <Radio value="department">指定部門 <Tooltip title={tips.selectionDept}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
+              <Radio value="sample">隨機抽樣 <Tooltip title={tips.selectionRandom}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
             </Space>
           </Radio.Group>
 
@@ -237,7 +238,7 @@ export default function CampaignWizard() {
           )}
 
           <Checkbox checked={spreadSend} onChange={e => setSpreadSend(e.target.checked)}>
-            分散發送（避免員工互相通風報信）
+            分散發送（避免員工互相通風報信） <Tooltip title={tips.spreadSend}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip>
           </Checkbox>
         </>
       )}
