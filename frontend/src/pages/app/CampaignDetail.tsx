@@ -160,11 +160,20 @@ export default function CampaignDetail() {
         <Tag color={STATUS_COLOR[campaign.status] ?? 'default'}>{campaign.status}</Tag>
       </Typography.Title>
       {campaign.launched_at && (
-        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
           發送時間：{dayjs(campaign.launched_at).format('YYYY-MM-DD HH:mm')}
           {campaign.completed_at && ` → 完成時間：${dayjs(campaign.completed_at).format('YYYY-MM-DD HH:mm')}`}
         </Typography.Text>
       )}
+
+      {/* Schedule info */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {campaign.schedule_start && <Tag>開始：{dayjs(campaign.schedule_start).format('MM/DD HH:mm')}</Tag>}
+        {campaign.send_by && <Tag>結束：{dayjs(campaign.send_by).format('MM/DD HH:mm')}</Tag>}
+        {campaign.working_hours_only && <Tag color="blue">僅工作時間</Tag>}
+        {campaign.skip_weekends && <Tag color="blue">避開週末</Tag>}
+        {campaign.selection_mode && <Tag>{campaign.selection_mode === 'all' ? '全部發送' : campaign.selection_mode === 'department' ? '依部門' : `隨機 ${campaign.sample_percent}%`}</Tag>}
+      </div>
 
       {/* Sending progress */}
       {funnel.total > 0 && (

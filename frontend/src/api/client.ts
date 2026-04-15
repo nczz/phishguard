@@ -95,7 +95,13 @@ export interface Campaign {
   page_id: string;
   smtp_profile_id: string;
   phish_url: string;
+  selection_mode: string;
+  sample_percent: number;
   launched_at: string;
+  send_by: string;
+  schedule_start: string;
+  working_hours_only: boolean;
+  skip_weekends: boolean;
   completed_at: string;
   created_at: string;
 }
