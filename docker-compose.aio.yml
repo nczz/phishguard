@@ -1,0 +1,95 @@
+# PhishGuard All-in-One 部署
+# 單一容器包含所有服務，外部只需 MySQL + Redis + Nginx reverse proxy
+
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-phishguard_root}
+      MYSQL_DATABASE: phishguard
+      MYSQL_USER: phishguard
+      MYSQL_PASSWORD: ${DB_PASS:-phishguard_prod}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migration:/docker-entrypoint-initdb.d
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: mysqladmin ping -h localhost -u root -p${DB_ROOT_PASS:-phishguard_root}
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      retries: 5
+
+  phishguard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:80"    # Frontend + API
+      - "8090:8090"  # Tracker
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: phishguard
+      DB_PASS: ${DB_PASS:-phishguard_prod}
+      DB_NAME: phishguard
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      API_ADDR: ":8080"
+      TRACKER_ADDR: ":8090"
+      TRACKER_BASE_URL: ${TRACKER_BASE_URL:-https://t.yourdomain.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@phishguard.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123}
+
+volumes:
+  mysql_data:
+  redis_data:
+
+# ── 外部 Nginx reverse proxy 設定範例 ──
+#
+# server {
+#     listen 443 ssl;
+#     server_name app.yourdomain.com;
+#     ssl_certificate /path/to/cert.pem;
+#     ssl_certificate_key /path/to/key.pem;
+#
+#     location / {
+#         proxy_pass http://127.0.0.1:3000;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# }
+#
+# server {
+#     listen 443 ssl;
+#     server_name t.yourdomain.com;
+#     ssl_certificate /path/to/cert.pem;
+#     ssl_certificate_key /path/to/key.pem;
+#
+#     location / {
+#         proxy_pass http://127.0.0.1:8090;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# }
