@@ -24,7 +24,9 @@ func (r *TemplateRepo) FindByID(tenantID, id int64) (*model.EmailTemplate, error
 }
 
 func (r *TemplateRepo) Update(tenantID int64, t *model.EmailTemplate) error {
-	return r.DB.Where("id = ? AND tenant_id = ?", t.ID, tenantID).Save(t).Error
+	return r.DB.Model(t).Where("id = ? AND tenant_id = ?", t.ID, tenantID).
+		Select("name", "subject", "html_body", "text_body", "category", "language", "updated_at").
+		Updates(t).Error
 }
 
 func (r *TemplateRepo) Delete(tenantID, id int64) error {

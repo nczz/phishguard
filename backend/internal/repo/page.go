@@ -24,7 +24,9 @@ func (r *PageRepo) FindByID(tenantID, id int64) (*model.LandingPage, error) {
 }
 
 func (r *PageRepo) Update(tenantID int64, p *model.LandingPage) error {
-	return r.DB.Where("id = ? AND tenant_id = ?", p.ID, tenantID).Save(p).Error
+	return r.DB.Model(p).Where("id = ? AND tenant_id = ?", p.ID, tenantID).
+		Select("name", "html", "capture_credentials", "capture_fields", "redirect_url", "updated_at").
+		Updates(p).Error
 }
 
 func (r *PageRepo) Delete(tenantID, id int64) error {

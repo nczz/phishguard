@@ -26,7 +26,9 @@ func (r *ScenarioRepo) FindByID(tenantID, id int64) (*model.Scenario, error) {
 }
 
 func (r *ScenarioRepo) Update(tenantID int64, s *model.Scenario) error {
-	return r.DB.Where("id = ? AND tenant_id = ?", s.ID, tenantID).Save(s).Error
+	return r.DB.Model(s).Where("id = ? AND tenant_id = ?", s.ID, tenantID).
+		Select("name", "category", "difficulty", "language", "template_id", "page_id", "education_html", "is_active", "updated_at").
+		Updates(s).Error
 }
 
 func (r *ScenarioRepo) Delete(tenantID, id int64) error {
