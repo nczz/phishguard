@@ -8,18 +8,18 @@ import (
 )
 
 type FunnelStats struct {
-	Total     int64
-	Sent      int64
-	Opened    int64
-	Clicked   int64
-	Submitted int64
-	Reported  int64
+	Total     int64 `json:"total"`
+	Sent      int64 `json:"sent"`
+	Opened    int64 `json:"opened"`
+	Clicked   int64 `json:"clicked"`
+	Submitted int64 `json:"submitted"`
+	Reported  int64 `json:"reported"`
 }
 
 type DepartmentStat struct {
-	Department string
-	Total      int64
-	Clicked    int64
+	Department string `json:"department"`
+	Total      int64  `json:"total"`
+	Clicked    int64  `json:"clicked"`
 }
 
 type ResultRepo struct{ DB *gorm.DB }
