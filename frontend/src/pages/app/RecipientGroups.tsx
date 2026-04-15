@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, List, Table, Modal, Form, Input, Button, Tabs, Space, Empty, Typography, message, Spin } from 'antd';
+import { Card, Table, Modal, Form, Input, Button, Tabs, Space, Empty, Typography, message, Spin } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
@@ -83,17 +83,14 @@ export default function RecipientGroups() {
           {groups.length === 0 ? (
             <Empty description="尚無群組" />
           ) : (
-            <List
-              dataSource={groups}
-              renderItem={(g) => (
-                <List.Item
-                  style={{ cursor: 'pointer', background: selected?.id === g.id ? '#e6f4ff' : undefined, padding: '8px 12px' }}
-                  onClick={() => selectGroup(g)}
-                >
-                  <List.Item.Meta title={g.name} description={`${g.recipients?.length ?? 0} 位收件人`} />
-                </List.Item>
-              )}
-            />
+            <div>
+              {groups.map((g) => (
+                <div key={g.id} onClick={() => selectGroup(g)} style={{ cursor: 'pointer', background: selected?.id === g.id ? '#e6f4ff' : undefined, padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ fontWeight: 500 }}>{g.name}</div>
+                  <div style={{ fontSize: 12, color: '#999' }}>{g.recipients?.length ?? 0} 位收件人</div>
+                </div>
+              ))}
+            </div>
           )}
         </Card>
 

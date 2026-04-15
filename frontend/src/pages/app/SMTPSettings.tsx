@@ -71,7 +71,7 @@ export default function SMTPSettings() {
     >
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={{ pageSize: 10 }} />
 
-      <Modal title="新增 SMTP 設定" open={open} onOk={() => form.submit()} onCancel={() => setOpen(false)} width={520} destroyOnClose>
+      <Modal title="新增 SMTP 設定" open={open} onOk={() => form.submit()} onCancel={() => setOpen(false)} width={520} destroyOnHidden>
         <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ mailer_type: 'smtp', port: 587, tls: true }}>
           <Form.Item name="name" label="名稱" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="mailer_type" label="類型">

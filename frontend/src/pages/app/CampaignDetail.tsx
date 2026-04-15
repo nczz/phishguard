@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Tag, Statistic, List, Progress, Button, Row, Col, Spin, Breadcrumb, Tooltip, Typography,
+  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Tooltip, Typography,
 } from 'antd';
 import { ArrowLeftOutlined, FilePdfOutlined } from '@ant-design/icons';
 import {
@@ -112,20 +112,15 @@ export default function CampaignDetail() {
       <Row gutter={24} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
           <Card title="部門風險排名" style={{ height: '100%' }}>
-            <List
-              dataSource={deptsSorted}
-              renderItem={(d: DepartmentStat) => {
-                const rate = d.total ? Math.round((d.clicked / d.total) * 100) : 0;
-                return (
-                  <List.Item>
-                    <List.Item.Meta title={d.department} />
-                    <div style={{ width: 180 }}>
-                      <Progress percent={rate} strokeColor={rateColor(rate)} size="small" />
-                    </div>
-                  </List.Item>
-                );
-              }}
-            />
+            {deptsSorted.map((d: DepartmentStat) => {
+              const rate = d.total ? Math.round((d.clicked / d.total) * 100) : 0;
+              return (
+                <div key={d.department} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <span>{d.department}</span>
+                  <div style={{ width: 180 }}><Progress percent={rate} strokeColor={rateColor(rate)} size="small" /></div>
+                </div>
+              );
+            })}
           </Card>
         </Col>
         <Col xs={24} lg={12}>
