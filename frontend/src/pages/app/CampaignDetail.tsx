@@ -158,7 +158,43 @@ export default function CampaignDetail() {
       {campaign.launched_at && (
         <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
           發送時間：{dayjs(campaign.launched_at).format('YYYY-MM-DD HH:mm')}
+          {campaign.completed_at && ` → 完成時間：${dayjs(campaign.completed_at).format('YYYY-MM-DD HH:mm')}`}
         </Typography.Text>
+      )}
+
+      {/* Sending progress */}
+      {funnel.total > 0 && (
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <Row gutter={24} align="middle">
+            <Col flex="auto">
+              <Progress
+                percent={funnel.total > 0 ? Math.round((funnel.sent / funnel.total) * 100) : 0}
+                status={campaign.status === 'sending' ? 'active' : campaign.status === 'completed' ? 'success' : 'normal'}
+                format={() => `${funnel.sent} / ${funnel.total} 封已發送`}
+              />
+            </Col>
+            <Col>
+              {campaign.status === 'sending' && <Tag color="processing">發送中 — 每 30 秒自動更新</Tag>}
+              {campaign.status === 'completed' && <Tag color="success">已完成</Tag>}
+              {campaign.status === 'draft' && <Tag>草稿</Tag>}
+              {campaign.status === 'scheduled' && <Tag color="orange">排程中</Tag>}
+            </Col>
+          </Row>
+          {campaign.status === 'sending' && funnel.sent > 0 && funnel.sent < funnel.total && (
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              預估剩餘：{(() => {
+                const remaining = funnel.total - funnel.sent;
+                const elapsed = dayjs().diff(dayjs(campaign.launched_at), 'second');
+                if (elapsed <= 0 || funnel.sent <= 0) return '計算中...';
+                const secsPerEmail = elapsed / funnel.sent;
+                const remainSecs = Math.round(remaining * secsPerEmail);
+                if (remainSecs < 60) return `${remainSecs} 秒`;
+                if (remainSecs < 3600) return `${Math.ceil(remainSecs / 60)} 分鐘`;
+                return `${(remainSecs / 3600).toFixed(1)} 小時`;
+              })()}
+            </Typography.Text>
+          )}
+        </Card>
       )}
 
       {/* Section 1: Funnel */}
