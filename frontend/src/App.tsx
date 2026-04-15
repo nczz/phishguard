@@ -1,121 +1,72 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider, Spin } from 'antd';
+import zhTW from 'antd/locale/zh_TW';
+import { AuthProvider, ProtectedRoute, useAuth } from './hooks/useAuth';
+import AdminLayout from './layouts/AdminLayout';
+import TenantLayout from './layouts/TenantLayout';
 
-function App() {
-  const [count, setCount] = useState(0)
+// ── Lazy pages ─────────────────────────────────────────
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+const Login = lazy(() => import('./pages/Login'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const TenantList = lazy(() => import('./pages/admin/TenantList'));
+const TenantCreate = lazy(() => import('./pages/admin/TenantCreate'));
+const Dashboard = lazy(() => import('./pages/app/Dashboard'));
+const CampaignList = lazy(() => import('./pages/app/CampaignList'));
+const CampaignWizard = lazy(() => import('./pages/app/CampaignWizard'));
+const CampaignDetail = lazy(() => import('./pages/app/CampaignDetail'));
+const ScenarioList = lazy(() => import('./pages/app/ScenarioList'));
+const TemplateList = lazy(() => import('./pages/app/TemplateList'));
+const RecipientGroups = lazy(() => import('./pages/app/RecipientGroups'));
+const SMTPSettings = lazy(() => import('./pages/app/SMTPSettings'));
+const AuditLogs = lazy(() => import('./pages/app/AuditLogs'));
 
-      <div className="ticks"></div>
+const fallback = <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+// ── Root redirect ──────────────────────────────────────
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function RootRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return fallback;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.role === 'platform_admin' ? '/admin/dashboard' : '/app/dashboard'} replace />;
 }
 
-export default App
+// ── App ────────────────────────────────────────────────
+
+export default function App() {
+  return (
+    <ConfigProvider locale={zhTW}>
+      <BrowserRouter>
+        <AuthProvider>
+          <Suspense fallback={fallback}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+
+              <Route path="/admin" element={<ProtectedRoute role="platform_admin"><AdminLayout /></ProtectedRoute>}>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="tenants" element={<TenantList />} />
+                <Route path="tenants/new" element={<TenantCreate />} />
+              </Route>
+
+              <Route path="/app" element={<ProtectedRoute><TenantLayout /></ProtectedRoute>}>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="campaigns" element={<CampaignList />} />
+                <Route path="campaigns/new" element={<CampaignWizard />} />
+                <Route path="campaigns/:id" element={<CampaignDetail />} />
+                <Route path="scenarios" element={<ScenarioList />} />
+                <Route path="templates" element={<TemplateList />} />
+                <Route path="recipients" element={<RecipientGroups />} />
+                <Route path="settings/smtp" element={<SMTPSettings />} />
+                <Route path="settings/audit" element={<AuditLogs />} />
+              </Route>
+
+              <Route path="/" element={<RootRedirect />} />
+            </Routes>
+          </Suspense>
+        </AuthProvider>
+      </BrowserRouter>
+    </ConfigProvider>
+  );
+}
