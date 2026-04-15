@@ -1,0 +1,212 @@
+package tracker
+
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/phishguard/phishguard/internal/model"
+	"gorm.io/gorm"
+)
+
+// 1x1 transparent GIF (GIF89a)
+var transparentGIF = []byte{
+	0x47, 0x49, 0x46, 0x38, 0x39, 0x61, // GIF89a
+	0x01, 0x00, 0x01, 0x00, // 1x1
+	0x80, 0x00, 0x00, // GCT flag, 1 color
+	0xff, 0xff, 0xff, // color 0: white
+	0x00, 0x00, 0x00, // color 1: black
+	0x21, 0xf9, 0x04, // GCE
+	0x01, 0x00, 0x00, 0x00, 0x00, // transparent index 0
+	0x2c, 0x00, 0x00, 0x00, 0x00, // image descriptor
+	0x01, 0x00, 0x01, 0x00, 0x00, // 1x1, no LCT
+	0x02, 0x02, 0x4c, 0x01, 0x00, // LZW min code size 2, data
+	0x3b, // trailer
+}
+
+type Handler struct {
+	DB *gorm.DB
+}
+
+func NewHandler(db *gorm.DB) *Handler {
+	return &Handler{DB: db}
+}
+
+func (h *Handler) RegisterRoutes(r *gin.Engine) {
+	t := r.Group("/t")
+	t.GET("/o/:rid", h.HandleOpen)
+	t.GET("/c/:rid", h.HandleClick)
+	t.GET("/d/:rid/:filename", h.HandleDownload)
+	t.POST("/s/:rid", h.HandleSubmit)
+	t.POST("/r/:rid", h.HandleReport)
+	t.GET("/landing", h.HandleLanding)
+}
+
+func (h *Handler) HandleOpen(c *gin.Context) {
+	var result model.Result
+	if err := h.DB.Where("rid = ?", c.Param("rid")).First(&result).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	now := time.Now()
+	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
+	recordEvent(h.DB, result.ID, result.CampaignID, model.EventOpened, c.Request, nil)
+
+	c.Data(http.StatusOK, "image/gif", transparentGIF)
+	c.Header("Cache-Control", "no-store")
+}
+
+func (h *Handler) HandleClick(c *gin.Context) {
+	var result model.Result
+	if err := h.DB.Where("rid = ?", c.Param("rid")).Preload("Campaign").First(&result).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	now := time.Now()
+	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
+	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
+	recordEvent(h.DB, result.ID, result.CampaignID, model.EventClicked, c.Request, nil)
+
+	// Build landing URL from campaign's phish_url
+	var campaign model.Campaign
+	h.DB.First(&campaign, result.CampaignID)
+	phishURL := strings.TrimRight(campaign.PhishURL, "/")
+	c.Redirect(http.StatusFound, phishURL+"/landing?rid="+result.RID)
+}
+
+// HandleDownload does not exist as a constant — we don't need the Campaign preload here.
+func (h *Handler) HandleDownload(c *gin.Context) {
+	var result model.Result
+	if err := h.DB.Where("rid = ?", c.Param("rid")).First(&result).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	now := time.Now()
+	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
+	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
+	recordEvent(h.DB, result.ID, result.CampaignID, "downloaded", c.Request, map[string]interface{}{
+		"filename": c.Param("filename"),
+	})
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("<html><body><h1>File not available</h1></body></html>"))
+}
+
+func (h *Handler) HandleSubmit(c *gin.Context) {
+	var result model.Result
+	if err := h.DB.Where("rid = ?", c.Param("rid")).First(&result).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	now := time.Now()
+	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
+	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
+	h.DB.Model(&result).Where("submitted_at IS NULL").Update("submitted_at", now)
+
+	// Record field names only (not values)
+	_ = c.Request.ParseForm()
+	fields := make([]string, 0, len(c.Request.PostForm))
+	for k := range c.Request.PostForm {
+		fields = append(fields, k)
+	}
+	recordEvent(h.DB, result.ID, result.CampaignID, model.EventSubmitted, c.Request, map[string]interface{}{
+		"fields": fields,
+	})
+
+	// Look up education HTML from scenario
+	html := "<html><body><h1>Training Complete</h1><p>This was a phishing simulation.</p></body></html>"
+	var campaign model.Campaign
+	if h.DB.First(&campaign, result.CampaignID).Error == nil && campaign.ScenarioID != nil {
+		var scenario model.Scenario
+		if h.DB.First(&scenario, *campaign.ScenarioID).Error == nil && scenario.EducationHTML != "" {
+			html = scenario.EducationHTML
+		}
+	}
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func (h *Handler) HandleReport(c *gin.Context) {
+	var result model.Result
+	if err := h.DB.Where("rid = ?", c.Param("rid")).First(&result).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	now := time.Now()
+	h.DB.Model(&result).Where("reported_at IS NULL").Update("reported_at", now)
+	recordEvent(h.DB, result.ID, result.CampaignID, model.EventReported, c.Request, nil)
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) HandleLanding(c *gin.Context) {
+	rid := c.Query("rid")
+	if rid == "" {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	var result model.Result
+	if err := h.DB.Where("rid = ?", rid).First(&result).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	var campaign model.Campaign
+	if err := h.DB.First(&campaign, result.CampaignID).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	// Resolve landing page: campaign.PageID > scenario.PageID
+	var pageID *int64
+	if campaign.PageID != nil {
+		pageID = campaign.PageID
+	} else if campaign.ScenarioID != nil {
+		var scenario model.Scenario
+		if h.DB.First(&scenario, *campaign.ScenarioID).Error == nil {
+			pageID = scenario.PageID
+		}
+	}
+
+	if pageID == nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	var page model.LandingPage
+	if err := h.DB.First(&page, *pageID).Error; err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	// Inject rid into form action URL
+	phishURL := strings.TrimRight(campaign.PhishURL, "/")
+	html := strings.ReplaceAll(page.HTML, "{{.RID}}", rid)
+	html = strings.ReplaceAll(html, "{{.SubmitURL}}", phishURL+"/t/s/"+rid)
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func recordEvent(db *gorm.DB, resultID, campaignID int64, eventType string, r *http.Request, detail map[string]interface{}) {
+	var detailStr string
+	if detail != nil {
+		if b, err := json.Marshal(detail); err == nil {
+			detailStr = string(b)
+		}
+	}
+	db.Create(&model.Event{
+		ResultID:   resultID,
+		CampaignID: campaignID,
+		EventType:  eventType,
+		IPAddress:  r.RemoteAddr,
+		UserAgent:  r.UserAgent(),
+		Detail:     detailStr,
+	})
+}
