@@ -11,6 +11,9 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  impersonating: boolean;
+  impersonate: (token: string) => void;
+  exitImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -19,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(!!token);
+  const [impersonating, setImpersonating] = useState(() => !!localStorage.getItem('original_token'));
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,13 +45,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('original_token');
     setToken(null);
     setUser(null);
+    setImpersonating(false);
     navigate('/login');
   };
 
+  const impersonate = (newToken: string) => {
+    localStorage.setItem('original_token', token!);
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setImpersonating(true);
+  };
+
+  const exitImpersonation = () => {
+    const original = localStorage.getItem('original_token');
+    if (!original) return;
+    localStorage.setItem('token', original);
+    localStorage.removeItem('original_token');
+    setToken(original);
+    setImpersonating(false);
+    navigate('/admin/dashboard');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading, impersonating, impersonate, exitImpersonation }}>
       {children}
     </AuthContext.Provider>
   );

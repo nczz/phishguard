@@ -7,6 +7,7 @@ const { Header, Content } = Layout;
 const items = [
   { key: '/admin/dashboard', label: 'Dashboard' },
   { key: '/admin/tenants', label: 'Tenants' },
+  { key: '/admin/audit-logs', label: '稽核日誌' },
 ];
 
 export default function AdminLayout() {

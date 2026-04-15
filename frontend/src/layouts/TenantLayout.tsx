@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layout, Menu, Button, Typography } from 'antd';
+import { Layout, Menu, Button, Typography, Alert } from 'antd';
 import {
   DashboardOutlined, SendOutlined, AppstoreOutlined,
   FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined, LayoutOutlined, NodeIndexOutlined,
@@ -30,7 +30,7 @@ const menuItems = [
 ];
 
 export default function TenantLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, impersonating, exitImpersonation } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -63,6 +63,15 @@ export default function TenantLayout() {
           <Button size="small" onClick={logout}>Logout</Button>
         </Header>
         <Content style={{ padding: 24 }}>
+          {impersonating && (
+            <Alert
+              type="warning"
+              banner
+              message="您正在以租戶身份操作"
+              action={<Button size="small" onClick={exitImpersonation}>返回管理員</Button>}
+              style={{ marginBottom: 16 }}
+            />
+          )}
           <Outlet />
         </Content>
       </Layout>

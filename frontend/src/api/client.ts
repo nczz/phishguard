@@ -174,6 +174,8 @@ export const api = {
     instance.post<T>(url, data).then((r) => r.data),
   put: <T>(url: string, data?: unknown) =>
     instance.put<T>(url, data).then((r) => r.data),
+  patch: <T>(url: string, data?: unknown) =>
+    instance.patch<T>(url, data).then((r) => r.data),
   del: <T>(url: string) =>
     instance.delete<T>(url).then((r) => r.data),
 };

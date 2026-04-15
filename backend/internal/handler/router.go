@@ -24,8 +24,15 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		admin.GET("/tenants", h.ListTenants)
 		admin.GET("/tenants/:id", h.GetTenant)
 		admin.PUT("/tenants/:id", h.UpdateTenant)
-		admin.GET("/dashboard", h.AdminDashboard)
+		admin.GET("/dashboard", h.AdminDashboardFull)
 		admin.POST("/scenarios", h.CreatePlatformScenario)
+		admin.GET("/tenants/:id/campaigns", h.AdminTenantCampaigns)
+		admin.PATCH("/tenants/:id/toggle", h.ToggleTenant)
+		admin.GET("/tenants/:id/users", h.AdminListUsers)
+		admin.POST("/tenants/:id/users", h.AdminCreateUser)
+		admin.DELETE("/tenants/:id/users/:uid", h.AdminDeleteUser)
+		admin.POST("/tenants/:id/impersonate", h.AdminImpersonate)
+		admin.GET("/audit-logs", h.AdminAuditLogs)
 	}
 
 	api := r.Group("/api",
