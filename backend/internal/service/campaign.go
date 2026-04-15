@@ -132,7 +132,7 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 
 	// 2. Then apply selection mode on the eligible pool
 	switch c.SelectionMode {
-	case "random":
+	case "random", "sample":
 		rand.Shuffle(len(recipients), func(i, j int) { recipients[i], recipients[j] = recipients[j], recipients[i] })
 		n := len(recipients) * c.SamplePercent / 100
 		if n < 1 {
