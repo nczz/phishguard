@@ -115,7 +115,7 @@ export default function ScenarioList() {
         </Row>
       )}
 
-      <Drawer title={editing ? '編輯情境' : '新增情境'} open={open} onClose={() => { setOpen(false); setEditing(null); }} width={520} extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
+      <Drawer title={editing ? '編輯情境' : '新增情境'} open={open} onClose={() => { setOpen(false); setEditing(null); }} extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
         <Form form={form} layout="vertical" onFinish={onSubmit} initialValues={{ difficulty: 2, language: 'zh-TW', is_active: true }}>
           <Form.Item name="name" label={<FieldHelp label="情境名稱" tip={tips.scenario} guideAnchor="scenarios" />} rules={[{ required: true }]}><Input placeholder="例：密碼到期通知" /></Form.Item>
           <Form.Item name="category" label="分類" rules={[{ required: true }]}><Select options={categories} placeholder="選擇分類" /></Form.Item>
@@ -136,7 +136,7 @@ export default function ScenarioList() {
         </Form>
       </Drawer>
 
-      <Drawer title="教育頁預覽" open={previewOpen} onClose={() => setPreviewOpen(false)} width={520}>
+      <Drawer title="教育頁預覽" open={previewOpen} onClose={() => setPreviewOpen(false)}>
         <div dangerouslySetInnerHTML={{ __html: previewHtml }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, minHeight: 400 }} />
       </Drawer>
     </div>

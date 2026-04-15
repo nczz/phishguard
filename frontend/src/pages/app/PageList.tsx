@@ -54,7 +54,7 @@ export default function PageList() {
         ]} />
       </Card>
 
-      <Drawer title={editing ? '編輯 Landing Page' : '新增 Landing Page'} open={open} onClose={() => { setOpen(false); setEditing(null); }} width={640}
+      <Drawer title={editing ? '編輯 Landing Page' : '新增 Landing Page'} open={open} onClose={() => { setOpen(false); setEditing(null); }}
         extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}>
         <Form form={form} layout="vertical" onFinish={onSubmit} initialValues={{ capture_credentials: true }}>
           <Form.Item name="name" label="頁面名稱" rules={[{ required: true }]}><Input placeholder="例：仿公司登入頁" /></Form.Item>
@@ -70,7 +70,7 @@ export default function PageList() {
         </Form>
       </Drawer>
 
-      <Drawer title="頁面預覽" open={previewOpen} onClose={() => setPreviewOpen(false)} width={500}>
+      <Drawer title="頁面預覽" open={previewOpen} onClose={() => setPreviewOpen(false)}>
         <div dangerouslySetInnerHTML={{ __html: previewHtml }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, minHeight: 400 }} />
       </Drawer>
     </div>

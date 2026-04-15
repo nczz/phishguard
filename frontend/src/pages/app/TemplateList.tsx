@@ -78,7 +78,7 @@ export default function TemplateList() {
 
       <Drawer
         title={editing ? '編輯模板' : '新增模板'}
-        width={600}
+       
         open={open}
         onClose={() => setOpen(false)}
         extra={<Button type="primary" onClick={() => form.submit()}>儲存</Button>}
