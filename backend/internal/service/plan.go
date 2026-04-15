@@ -2,10 +2,10 @@ package service
 
 import "github.com/phishguard/phishguard/internal/model"
 
-// PlanDefaults defines what each plan includes
 type PlanConfig struct {
 	MaxRecipients       int  `json:"max_recipients"`
-	MaxCampaignsPerYear int  `json:"max_campaigns_per_year"` // 0 = unlimited
+	MaxCampaignsPerYear int  `json:"max_campaigns_per_year"`
+	MaxEmailsPerMonth   int  `json:"max_emails_per_month"`
 	CustomTemplate      bool `json:"custom_template"`
 	AutoTest            bool `json:"auto_test"`
 	DepartmentReport    bool `json:"department_report"`
@@ -17,6 +17,7 @@ var PlanDefaults = map[string]PlanConfig{
 	"free": {
 		MaxRecipients:       50,
 		MaxCampaignsPerYear: 4,
+		MaxEmailsPerMonth:   200,
 		CustomTemplate:      false,
 		AutoTest:            false,
 		DepartmentReport:    false,
@@ -25,7 +26,8 @@ var PlanDefaults = map[string]PlanConfig{
 	},
 	"pro": {
 		MaxRecipients:       1000,
-		MaxCampaignsPerYear: 0, // unlimited
+		MaxCampaignsPerYear: 0,
+		MaxEmailsPerMonth:   10000,
 		CustomTemplate:      true,
 		AutoTest:            true,
 		DepartmentReport:    true,
@@ -33,8 +35,9 @@ var PlanDefaults = map[string]PlanConfig{
 		AuditLog:            true,
 	},
 	"enterprise": {
-		MaxRecipients:       0, // unlimited
+		MaxRecipients:       0,
 		MaxCampaignsPerYear: 0,
+		MaxEmailsPerMonth:   0,
 		CustomTemplate:      true,
 		AutoTest:            true,
 		DepartmentReport:    true,
@@ -50,10 +53,8 @@ func GetPlanConfig(plan string) PlanConfig {
 	return PlanDefaults["free"]
 }
 
-// GetEffectiveLimits returns the actual limits for a tenant (plan defaults overridden by tenant-level settings)
 func GetEffectiveLimits(t *model.Tenant) PlanConfig {
 	pc := GetPlanConfig(t.Plan)
-	// Tenant-level overrides (if admin has set custom values)
 	if t.MaxRecipients > 0 {
 		pc.MaxRecipients = t.MaxRecipients
 	}

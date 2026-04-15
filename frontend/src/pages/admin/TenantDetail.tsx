@@ -183,6 +183,7 @@ export default function TenantDetail() {
                 <Descriptions.Item label="目前方案"><Tag color={planColor[tenant?.plan || 'free']}>{tenant?.plan}</Tag></Descriptions.Item>
                 <Descriptions.Item label="收件人">{String((planData.usage as Record<string,number>)?.recipients ?? 0)} / {(planData.limits as Record<string,number>)?.max_recipients === 0 ? '無限' : String((planData.limits as Record<string,number>)?.max_recipients)}</Descriptions.Item>
                 <Descriptions.Item label="本年活動">{String((planData.usage as Record<string,number>)?.campaigns_this_year ?? 0)} / {(planData.limits as Record<string,number>)?.max_campaigns_per_year === 0 ? '無限' : String((planData.limits as Record<string,number>)?.max_campaigns_per_year)}</Descriptions.Item>
+                <Descriptions.Item label="本月發信">{String((planData.usage as Record<string,number>)?.emails_this_month ?? 0)} / {(planData.limits as Record<string,number>)?.max_emails_per_month === 0 ? '無限' : String((planData.limits as Record<string,number>)?.max_emails_per_month)}</Descriptions.Item>
                 <Descriptions.Item label="自訂模板">{(planData.limits as Record<string,boolean>)?.custom_template ? '✅' : '❌'}</Descriptions.Item>
                 <Descriptions.Item label="自動測試">{(planData.limits as Record<string,boolean>)?.auto_test ? '✅' : '❌'}</Descriptions.Item>
                 <Descriptions.Item label="部門報表">{(planData.limits as Record<string,boolean>)?.department_report ? '✅' : '❌'}</Descriptions.Item>

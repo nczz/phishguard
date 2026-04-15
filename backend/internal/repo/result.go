@@ -83,3 +83,11 @@ func (r *ResultRepo) FindRecentByRecipientEmail(tenantID int64, email string, da
 		Find(&results).Error
 	return results, err
 }
+
+func (r *ResultRepo) CountSentThisMonth(tenantID int64) (int64, error) {
+	var count int64
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	err := r.DB.Model(&model.Result{}).Where("tenant_id = ? AND sent_at >= ?", tenantID, monthStart).Count(&count).Error
+	return count, err
+}

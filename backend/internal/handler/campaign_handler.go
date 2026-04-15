@@ -72,6 +72,23 @@ func (h *Handler) LaunchCampaign(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
+
+	// Plan limit check: monthly email quota
+	var tenant model.Tenant
+	if err := h.DB.First(&tenant, tid).Error; err == nil {
+		limits := service.GetEffectiveLimits(&tenant)
+		if limits.MaxEmailsPerMonth > 0 {
+			sent, _ := h.ResultRepo.CountSentThisMonth(tid)
+			// Estimate: count recipients in this campaign
+			var recipientCount int64
+			h.DB.Model(&model.Result{}).Where("campaign_id = ?", id).Count(&recipientCount)
+			if sent+recipientCount > int64(limits.MaxEmailsPerMonth) {
+				c.JSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("本月發信量將超過上限 (%d 封)，已發送 %d 封，本次需發送 %d 封。請升級方案或聯繫管理員。", limits.MaxEmailsPerMonth, sent, recipientCount)})
+				return
+			}
+		}
+	}
+
 	if err := h.CampaignService.LaunchCampaign(tid, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

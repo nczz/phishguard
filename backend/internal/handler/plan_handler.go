@@ -26,13 +26,14 @@ func (h *Handler) AdminGetPlan(c *gin.Context) {
 	limits := service.GetEffectiveLimits(&tenant)
 	recipientCount, _ := h.RecipientRepo.CountByTenant(id)
 	campaignCount, _ := h.CampaignRepo.CountByTenantThisYear(id)
+	emailsThisMonth, _ := h.ResultRepo.CountSentThisMonth(id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"plan":             tenant.Plan,
 		"limits":           limits,
 		"plan_defaults":    service.GetPlanConfig(tenant.Plan),
 		"overrides":        gin.H{"max_recipients": tenant.MaxRecipients, "max_campaigns_per_year": tenant.MaxCampaignsPerYear},
-		"usage":            gin.H{"recipients": recipientCount, "campaigns_this_year": campaignCount},
+		"usage": gin.H{"recipients": recipientCount, "campaigns_this_year": campaignCount, "emails_this_month": emailsThisMonth},
 	})
 }
 
@@ -73,10 +74,11 @@ func (h *Handler) GetMyPlan(c *gin.Context) {
 	limits := service.GetEffectiveLimits(&tenant)
 	recipientCount, _ := h.RecipientRepo.CountByTenant(tid)
 	campaignCount, _ := h.CampaignRepo.CountByTenantThisYear(tid)
+	emailsThisMonth, _ := h.ResultRepo.CountSentThisMonth(tid)
 
 	c.JSON(http.StatusOK, gin.H{
 		"plan":   tenant.Plan,
 		"limits": limits,
-		"usage":  gin.H{"recipients": recipientCount, "campaigns_this_year": campaignCount},
+		"usage": gin.H{"recipients": recipientCount, "campaigns_this_year": campaignCount, "emails_this_month": emailsThisMonth},
 	})
 }
