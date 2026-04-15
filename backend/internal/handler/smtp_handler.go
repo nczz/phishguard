@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/mailer"
@@ -43,6 +44,18 @@ func (h *Handler) CreateSMTPProfile(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	// Validate from_address
+	if !strings.Contains(req.FromAddress, "@") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "寄件地址必須是完整的 email 格式（如 noreply@yourdomain.com）"})
+		return
+	}
+	if req.MailerType == "mailgun" && req.MailgunDomain != "" {
+		fromDomain := req.FromAddress[strings.LastIndex(req.FromAddress, "@")+1:]
+		if fromDomain != req.MailgunDomain {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("寄件地址的域名（%s）必須與 Mailgun Domain（%s）一致", fromDomain, req.MailgunDomain)})
+			return
+		}
 	}
 	p := model.SMTPProfile{
 		TenantID:      tid,
