@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phishguard/phishguard/internal/middleware"
@@ -81,4 +82,44 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"created": created, "updated": updated, "total": created + updated})
+}
+
+func (h *Handler) UpdateRecipient(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	var req struct {
+		Email      string `json:"email"`
+		FirstName  string `json:"first_name"`
+		LastName   string `json:"last_name"`
+		Department string `json:"department"`
+		Gender     string `json:"gender"`
+		Position   string `json:"position"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.RecipientRepo.UpdateRecipient(tid, id, req.Email, req.FirstName, req.LastName, req.Department, req.Gender, req.Position); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "updated"})
+}
+
+func (h *Handler) DeleteRecipient(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	if err := h.RecipientRepo.DeleteRecipient(tid, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space } from 'antd';
-import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input } from 'antd';
+import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
 
@@ -36,6 +36,9 @@ export default function RecipientGroups() {
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [deptFilter, setDeptFilter] = useState<string | undefined>();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<Recipient | null>(null);
+  const [editForm] = Form.useForm();
 
   const load = () => {
     api.get<RecipientGroup[]>('/recipient-groups').then(gs => {
@@ -109,12 +112,42 @@ export default function RecipientGroups() {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [parsed]);
 
+  // Export CSV
+  const exportCSV = () => {
+    const header = 'email,first_name,last_name,department,gender,position';
+    const rows = filteredRecipients.map(r => [r.email, r.first_name, r.last_name, r.department, r.gender, r.position].join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `收件人名單${deptFilter ? '_' + deptFilter : ''}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Edit
+  const openEdit = (r: Recipient) => { setEditRecord(r); editForm.setFieldsValue(r); setEditOpen(true); };
+  const saveEdit = async (values: Record<string, string>) => {
+    if (!editRecord) return;
+    try {
+      await api.put(`/recipients/${editRecord.id}`, values);
+      message.success('已更新');
+      setEditOpen(false);
+      load();
+    } catch { message.error('更新失敗'); }
+  };
+
+  // Delete
+  const deleteRecipient = async (id: string) => {
+    try { await api.del(`/recipients/${id}`); message.success('已刪除'); load(); }
+    catch { message.error('刪除失敗'); }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>收件人管理</Typography.Title>
         <Space>
           <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>下載 CSV 範本</Button>
+          {allRecipients.length > 0 && <Button icon={<ExportOutlined />} onClick={exportCSV}>匯出{deptFilter ? ` ${deptFilter}` : '全部'}</Button>}
           <Upload accept=".csv,.txt" showUploadList={false} beforeUpload={handleFile}>
             <Button type="primary" icon={<UploadOutlined />}>匯入員工名單</Button>
           </Upload>
@@ -171,6 +204,12 @@ export default function RecipientGroups() {
               { title: '性別', dataIndex: 'gender', width: 80, render: (g: string) => g || '不指定',
                 filters: [{ text: '男', value: '男' }, { text: '女', value: '女' }, { text: '不指定', value: '不指定' }], onFilter: (v: unknown, r: Recipient) => (r.gender || '不指定') === v },
               { title: '職稱', dataIndex: 'position', width: 120 },
+              { title: '操作', width: 100, render: (_: unknown, r: Recipient) => (
+                <Space size="small">
+                  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+                  <Popconfirm title="確定刪除？" onConfirm={() => deleteRecipient(r.id)}><Button type="link" size="small" danger icon={<DeleteOutlined />} /></Popconfirm>
+                </Space>
+              )},
             ]}
           />
         )}
@@ -197,6 +236,21 @@ export default function RecipientGroups() {
             { title: '職稱', dataIndex: 'position', width: 120 },
           ]}
         />
+      </Modal>
+
+      <Modal title="編輯收件人" open={editOpen} onCancel={() => setEditOpen(false)} onOk={() => editForm.submit()} destroyOnHidden>
+        <Form form={editForm} layout="vertical" onFinish={saveEdit}>
+          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item>
+          <Row gutter={12}>
+            <Col span={12}><Form.Item name="last_name" label="姓"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="first_name" label="名"><Input /></Form.Item></Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}><Form.Item name="department" label="部門"><Input /></Form.Item></Col>
+            <Col span={8}><Form.Item name="gender" label="性別"><Select options={[{ value: '男' }, { value: '女' }, { value: '不指定' }]} /></Form.Item></Col>
+            <Col span={8}><Form.Item name="position" label="職稱"><Input /></Form.Item></Col>
+          </Row>
+        </Form>
       </Modal>
     </div>
   );

@@ -50,6 +50,8 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.GET("/recipient-groups", h.ListRecipientGroups)
 		api.POST("/recipient-groups", h.CreateRecipientGroup)
 		api.POST("/recipient-groups/import", h.ImportRecipients)
+		api.PUT("/recipients/:id", h.UpdateRecipient)
+		api.DELETE("/recipients/:id", h.DeleteRecipient)
 
 		api.GET("/smtp-profiles", h.ListSMTPProfiles)
 		api.POST("/smtp-profiles", h.CreateSMTPProfile)

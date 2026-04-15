@@ -77,3 +77,14 @@ func (r *RecipientRepo) UpsertRecipients(tenantID, groupID int64, recipients []m
 	}
 	return
 }
+
+func (r *RecipientRepo) UpdateRecipient(tenantID, id int64, email, firstName, lastName, department, gender, position string) error {
+	return r.DB.Model(&model.Recipient{}).Where("tenant_id = ? AND id = ?", tenantID, id).Updates(map[string]interface{}{
+		"email": email, "first_name": firstName, "last_name": lastName,
+		"department": department, "gender": gender, "position": position,
+	}).Error
+}
+
+func (r *RecipientRepo) DeleteRecipient(tenantID, id int64) error {
+	return r.DB.Where("tenant_id = ? AND id = ?", tenantID, id).Delete(&model.Recipient{}).Error
+}
