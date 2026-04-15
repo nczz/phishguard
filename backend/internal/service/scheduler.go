@@ -65,13 +65,16 @@ func runOneAutoTest(db *gorm.DB, campaignSvc *CampaignService, cfg *model.AutoTe
 	}
 
 	scenarioID := scenario.ID
+	selMode := cfg.TargetMode
+	if selMode == "random" { selMode = "sample" }
+
 	campaign, err := campaignSvc.CreateCampaign(cfg.TenantID, &CreateCampaignRequest{
 		Name:          fmt.Sprintf("Auto Test - %s", time.Now().Format("2006-01-02")),
 		ScenarioID:    &scenarioID,
 		SMTPProfileID: smtp.ID,
 		GroupIDs:      groupIDs,
 		PhishURL:      phishURL,
-		SelectionMode: cfg.TargetMode,
+		SelectionMode: selMode,
 		SamplePercent: cfg.SamplePercent,
 	})
 	if err != nil {
