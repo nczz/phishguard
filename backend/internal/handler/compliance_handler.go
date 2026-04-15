@@ -47,10 +47,7 @@ func (h *Handler) CheckMailCompliance(c *gin.Context) {
 	// 1. SPF
 	checks = append(checks, checkSPF(domain, &score))
 
-	// 2. DKIM (check for common selectors)
-	checks = append(checks, checkDKIM(domain, &score))
-
-	// 3. DMARC
+	// 2. DMARC
 	checks = append(checks, checkDMARC(domain, &score))
 
 	// 4. MX record
@@ -104,24 +101,6 @@ func checkSPF(domain string, score *int) ComplianceCheck {
 	*score -= 25
 	return ComplianceCheck{Name: "SPF 記錄", Status: "fail", Detail: "未找到 SPF 記錄",
 		Fix: fmt.Sprintf("在 %s 的 DNS 加入 TXT 記錄：v=spf1 include:mailgun.org include:amazonses.com ~all", domain)}
-}
-
-func checkDKIM(domain string, score *int) ComplianceCheck {
-	selectors := []string{"default", "google", "selector1", "selector2", "k1", "mandrill", "mailgun", "ses"}
-	for _, sel := range selectors {
-		host := sel + "._domainkey." + domain
-		txts, err := net.LookupTXT(host)
-		if err == nil && len(txts) > 0 {
-			for _, txt := range txts {
-				if strings.Contains(txt, "p=") {
-					return ComplianceCheck{Name: "DKIM 記錄", Status: "pass", Detail: fmt.Sprintf("已設定 (selector: %s)", sel)}
-				}
-			}
-		}
-	}
-	*score -= 20
-	return ComplianceCheck{Name: "DKIM 記錄", Status: "warn", Detail: "未找到常見 DKIM selector（已檢查: default, google, selector1, selector2, k1, mailgun, ses）",
-		Fix: "請向您的郵件服務商取得 DKIM 設定，在 DNS 加入對應的 TXT 記錄（selector._domainkey." + domain + "）"}
 }
 
 func checkDMARC(domain string, score *int) ComplianceCheck {
