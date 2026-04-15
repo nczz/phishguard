@@ -3,6 +3,7 @@ import { Layout, Menu, Button, Typography, Alert } from 'antd';
 import {
   DashboardOutlined, SendOutlined, AppstoreOutlined,
   FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined, LayoutOutlined, NodeIndexOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -16,6 +17,15 @@ const menuItems = [
   { key: '/app/templates', icon: <FileTextOutlined />, label: '模板管理' },
   { key: '/app/pages', icon: <LayoutOutlined />, label: 'Landing Page' },
   { key: '/app/recipients', icon: <TeamOutlined />, label: '收件人' },
+  {
+    key: 'reports',
+    icon: <BarChartOutlined />,
+    label: '報表',
+    children: [
+      { key: '/app/reports/offenders', label: '累犯追蹤' },
+      { key: '/app/reports/trend', label: '趨勢分析' },
+    ],
+  },
   {
     key: 'settings',
     icon: <SettingOutlined />,
@@ -35,7 +45,7 @@ export default function TenantLayout() {
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
-  const openKey = pathname.startsWith('/app/settings') ? 'settings' : '';
+  const openKey = pathname.startsWith('/app/settings') ? 'settings' : pathname.startsWith('/app/reports') ? 'reports' : '';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

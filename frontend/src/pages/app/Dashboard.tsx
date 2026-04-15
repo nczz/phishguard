@@ -5,15 +5,20 @@ import { PlusOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { Campaign, Scenario } from '../../api/client';
 
+interface DashboardStats { total_campaigns: number; avg_open_rate: number; avg_click_rate: number; avg_submit_rate: number; avg_report_rate: number; }
+
 const statusColor: Record<string, string> = {
   draft: 'default', scheduled: 'orange', sending: 'processing', sent: 'blue', completed: 'green',
 };
 
 const rateColor = (v: number) => (v <= 20 ? '#52c41a' : v <= 50 ? '#faad14' : '#f5222d');
 
+const emptyStats: DashboardStats = { total_campaigns: 0, avg_open_rate: 0, avg_click_rate: 0, avg_submit_rate: 0, avg_report_rate: 0 };
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [hasScenarios, setHasScenarios] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -23,7 +28,8 @@ export default function Dashboard() {
     Promise.all([
       api.get<Campaign[]>('/campaigns'),
       api.get<Scenario[]>('/scenarios'),
-    ]).then(([c, s]) => { setCampaigns(c); setHasScenarios(s.length > 0); }).finally(() => setLoading(false));
+      api.get<DashboardStats>('/reports/dashboard-stats'),
+    ]).then(([c, s, d]) => { setCampaigns(c); setHasScenarios(s.length > 0); setStats(d); }).finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -37,12 +43,6 @@ export default function Dashboard() {
     } catch { message.error('匯入失敗'); }
     setSeeding(false);
   };
-
-  const total = campaigns.length;
-  // placeholder rates — real stats require per-campaign report fetching
-  const avgOpen = 0;
-  const avgClick = 0;
-  const avgSubmit = 0;
 
   if (loading) return <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
 
@@ -59,10 +59,10 @@ export default function Dashboard() {
       )}
 
       <Row gutter={[16, 16]}>
-        <Col xs={12} sm={6}><Card><Statistic title="總測試數" value={total} /></Card></Col>
-        <Col xs={12} sm={6}><Card><Statistic title="平均開信率" value={avgOpen} suffix="%" styles={{ content: { color: rateColor(avgOpen) } }} /></Card></Col>
-        <Col xs={12} sm={6}><Card><Statistic title="平均點擊率" value={avgClick} suffix="%" styles={{ content: { color: rateColor(avgClick) } }} /></Card></Col>
-        <Col xs={12} sm={6}><Card><Statistic title="平均提交率" value={avgSubmit} suffix="%" styles={{ content: { color: rateColor(avgSubmit) } }} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="總測試數" value={stats.total_campaigns} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="平均開信率" value={stats.avg_open_rate} suffix="%" styles={{ content: { color: rateColor(stats.avg_open_rate) } }} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="平均點擊率" value={stats.avg_click_rate} suffix="%" styles={{ content: { color: rateColor(stats.avg_click_rate) } }} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="平均提交率" value={stats.avg_submit_rate} suffix="%" styles={{ content: { color: rateColor(stats.avg_submit_rate) } }} /></Card></Col>
       </Row>
 
       <Card title="最近活動" style={{ marginTop: 24 }}>

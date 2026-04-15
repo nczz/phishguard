@@ -26,6 +26,8 @@ const SMTPSettings = lazy(() => import('./pages/app/SMTPSettings'));
 const AuditLogs = lazy(() => import('./pages/app/AuditLogs'));
 const Guide = lazy(() => import('./pages/app/Guide'));
 const FlowDiagram = lazy(() => import('./pages/app/FlowDiagram'));
+const RepeatOffenders = lazy(() => import('./pages/app/RepeatOffenders'));
+const TrendAnalysis = lazy(() => import('./pages/app/TrendAnalysis'));
 
 const fallback = <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
 
@@ -68,6 +70,8 @@ export default function App() {
                 <Route path="recipients" element={<RecipientGroups />} />
                 <Route path="settings/smtp" element={<SMTPSettings />} />
                 <Route path="settings/audit" element={<AuditLogs />} />
+                <Route path="reports/offenders" element={<RepeatOffenders />} />
+                <Route path="reports/trend" element={<TrendAnalysis />} />
                 <Route path="guide" element={<Guide />} />
                 <Route path="flow" element={<FlowDiagram />} />
               </Route>

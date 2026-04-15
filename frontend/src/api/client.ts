@@ -120,6 +120,19 @@ export interface CampaignReport {
   departments: DepartmentStat[];
 }
 
+export interface RecipientResult {
+  email: string;
+  first_name: string;
+  last_name: string;
+  department: string;
+  status: string;
+  sent_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  submitted_at: string | null;
+  reported_at: string | null;
+}
+
 export interface AuditLog {
   id: string;
   tenant_id: string;

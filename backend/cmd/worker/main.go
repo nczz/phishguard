@@ -98,7 +98,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			Count(&pending)
 		if pending == 0 {
 			now := time.Now()
-			campaign.Status = model.CampaignStatusSent
+			campaign.Status = model.CampaignStatusCompleted
 			campaign.CompletedAt = &now
 			campaignRepo.Update(campaign)
 			log.Printf("campaign %d: completed", campaign.ID)

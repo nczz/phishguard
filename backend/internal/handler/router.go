@@ -80,9 +80,14 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 
 		api.GET("/campaigns/:id/report", h.GetCampaignReport)
 		api.GET("/campaigns/:id/report/pdf", h.ExportCampaignPDF)
+		api.GET("/campaigns/:id/recipients", h.CampaignRecipients)
+		api.GET("/campaigns/:id/export/csv", h.ExportCampaignCSV)
 
 		api.GET("/reports/overview", h.GetOverviewReport)
 		api.GET("/reports/department", h.GetDepartmentReport)
+		api.GET("/reports/dashboard-stats", h.TenantDashboardStats)
+		api.GET("/reports/offenders", h.RepeatOffenders)
+		api.GET("/reports/trend", h.TrendAnalysis)
 
 		api.GET("/audit-logs", h.ListAuditLogs)
 		api.POST("/seed-sample-data", h.SeedSampleData)
