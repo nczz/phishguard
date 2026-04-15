@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Layout, Menu, Button, Typography } from 'antd';
 import {
   DashboardOutlined, SendOutlined, AppstoreOutlined,
-  FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined, LayoutOutlined,
+  FileTextOutlined, TeamOutlined, SettingOutlined, BookOutlined, LayoutOutlined, NodeIndexOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -26,6 +26,7 @@ const menuItems = [
     ],
   },
   { key: '/app/guide', icon: <BookOutlined />, label: '使用指南' },
+  { key: '/app/flow', icon: <NodeIndexOutlined />, label: '流程總覽' },
 ];
 
 export default function TenantLayout() {

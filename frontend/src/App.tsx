@@ -24,6 +24,7 @@ const RecipientGroups = lazy(() => import('./pages/app/RecipientGroups'));
 const SMTPSettings = lazy(() => import('./pages/app/SMTPSettings'));
 const AuditLogs = lazy(() => import('./pages/app/AuditLogs'));
 const Guide = lazy(() => import('./pages/app/Guide'));
+const FlowDiagram = lazy(() => import('./pages/app/FlowDiagram'));
 
 const fallback = <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
 
@@ -66,6 +67,7 @@ export default function App() {
                 <Route path="settings/smtp" element={<SMTPSettings />} />
                 <Route path="settings/audit" element={<AuditLogs />} />
                 <Route path="guide" element={<Guide />} />
+                <Route path="flow" element={<FlowDiagram />} />
               </Route>
 
               <Route path="/" element={<RootRedirect />} />
