@@ -71,6 +71,8 @@ export default function CampaignWizard() {
       setScenarios(s);
       setGroups(g);
       setSmtpProfiles(p);
+      // Auto-select all groups
+      setSelectedGroups(g.map((grp: RecipientGroup) => String(grp.id)));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -186,30 +188,35 @@ export default function CampaignWizard() {
         <>
           <Title level={4}>選擇測試對象</Title>
 
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>選擇收件人群組</Text>
-          <Checkbox.Group
-            value={selectedGroups}
-            onChange={v => setSelectedGroups(v as string[])}
-            style={{ marginBottom: 16 }}
-          >
-            <Space orientation="vertical">
-              {groups.map(g => (
-                <Checkbox key={g.id} value={g.id}>
-                  {g.name}（{g.recipients?.length ?? 0} 人）
-                </Checkbox>
-              ))}
-            </Space>
-          </Checkbox.Group>
+          {/* Only show group selector when multiple groups exist */}
+          {groups.length > 1 && (
+            <>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>收件人來源</Text>
+              <Checkbox.Group
+                value={selectedGroups}
+                onChange={v => setSelectedGroups(v as string[])}
+                style={{ marginBottom: 16 }}
+              >
+                <Space orientation="vertical">
+                  {groups.map(g => (
+                    <Checkbox key={g.id} value={g.id}>
+                      {g.name}（{g.recipients?.length ?? 0} 人）
+                    </Checkbox>
+                  ))}
+                </Space>
+              </Checkbox.Group>
+            </>
+          )}
 
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>發送範圍</Text>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>測試範圍（共 {estimatedCount} 人可測試）</Text>
           <Radio.Group
             value={selectionMode}
             onChange={e => setSelectionMode(e.target.value)}
             style={{ marginBottom: 16 }}
           >
             <Space orientation="vertical">
-              <Radio value="all">全公司（共 {allRecipients.length} 人） <Tooltip title={tips.selectionAll}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
-              <Radio value="department">指定部門 <Tooltip title={tips.selectionDept}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
+              <Radio value="all">全部發送（{allRecipients.length} 人）<Tooltip title={tips.selectionAll}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
+              <Radio value="department">依部門篩選 <Tooltip title={tips.selectionDept}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
               <Radio value="sample">隨機抽樣 <Tooltip title={tips.selectionRandom}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
             </Space>
           </Radio.Group>
