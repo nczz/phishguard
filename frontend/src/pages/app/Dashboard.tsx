@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Statistic, Tag, Button, Progress, Empty, Typography, Spin } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Statistic, Tag, Button, Progress, Empty, Typography, Spin, message, Alert } from 'antd';
+import { PlusOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
-import type { Campaign } from '../../api/client';
+import type { Campaign, Scenario } from '../../api/client';
 
 const statusColor: Record<string, string> = {
   draft: 'default', scheduled: 'orange', sending: 'processing', sent: 'blue', completed: 'green',
@@ -14,11 +14,29 @@ const rateColor = (v: number) => (v <= 20 ? '#52c41a' : v <= 50 ? '#faad14' : '#
 export default function Dashboard() {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [hasScenarios, setHasScenarios] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api.get<Campaign[]>('/campaigns').then(setCampaigns).finally(() => setLoading(false));
-  }, []);
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      api.get<Campaign[]>('/campaigns'),
+      api.get<Scenario[]>('/scenarios'),
+    ]).then(([c, s]) => { setCampaigns(c); setHasScenarios(s.length > 0); }).finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const seedData = async () => {
+    setSeeding(true);
+    try {
+      await api.post('/seed-sample-data');
+      message.success('範例資料已匯入！包含 5 個情境、5 個模板、2 個 Landing Page、5 位範例收件人');
+      load();
+    } catch { message.error('匯入失敗'); }
+    setSeeding(false);
+  };
 
   const total = campaigns.length;
   // placeholder rates — real stats require per-campaign report fetching
@@ -31,6 +49,14 @@ export default function Dashboard() {
   return (
     <div>
       <Typography.Title level={3}>歡迎回來</Typography.Title>
+
+      {!hasScenarios && (
+        <Alert type="info" showIcon style={{ marginBottom: 16 }}
+          message="尚未設定測試資料"
+          description="匯入範例資料可快速體驗完整功能，包含 5 個釣魚情境、信件模板、Landing Page 和範例收件人。"
+          action={<Button type="primary" icon={<ExperimentOutlined />} loading={seeding} onClick={seedData}>匯入範例資料</Button>}
+        />
+      )}
 
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={6}><Card><Statistic title="總測試數" value={total} /></Card></Col>

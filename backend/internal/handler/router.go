@@ -70,6 +70,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.GET("/reports/department", h.GetDepartmentReport)
 
 		api.GET("/audit-logs", h.ListAuditLogs)
+		api.POST("/seed-sample-data", h.SeedSampleData)
 	}
 
 	return r

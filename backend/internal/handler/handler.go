@@ -3,9 +3,11 @@ package handler
 import (
 	"github.com/phishguard/phishguard/internal/repo"
 	"github.com/phishguard/phishguard/internal/service"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
+	DB              *gorm.DB
 	JWTSecret       string
 	AuthService     *service.AuthService
 	TenantService   *service.TenantService

@@ -41,6 +41,7 @@ func main() {
 	}
 
 	h := &handler.Handler{
+		DB:              database,
 		JWTSecret:       cfg.JWTSecret,
 		AuthService:     authSvc,
 		TenantService:   tenantSvc,
