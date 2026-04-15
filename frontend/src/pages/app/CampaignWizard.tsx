@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Steps, Card, Row, Col, Button, Checkbox, Radio, Slider, Input,
+  Steps, Card, Row, Col, Button, Checkbox, Radio, Slider, Input, DatePicker,
   Tag, Modal, Spin, Typography, message, Space, Alert, Descriptions, Tooltip,
 } from 'antd';
 import { RocketOutlined, EyeOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { tips } from '../../components/FieldHelp';
 import type { Scenario, RecipientGroup, SMTPProfile, Campaign } from '../../api/client';
 import { api } from '../../api/client';
@@ -255,11 +256,17 @@ export default function CampaignWizard() {
               <div style={{ marginLeft: 24 }}>
                 <div style={{ marginBottom: 8 }}>
                   <Text>開始時間：</Text>
-                  <input type="datetime-local" value={scheduleStart} onChange={e => setScheduleStart(e.target.value ? new Date(e.target.value).toISOString() : '')} style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #d9d9d9' }} />
+                  <DatePicker showTime format="YYYY-MM-DD HH:mm" placeholder="選擇開始時間"
+                    value={scheduleStart ? dayjs(scheduleStart) : null}
+                    onChange={v => setScheduleStart(v ? v.toISOString() : '')}
+                    style={{ marginLeft: 8 }} />
                 </div>
                 <div style={{ marginBottom: 8 }}>
                   <Text>結束時間：</Text>
-                  <input type="datetime-local" value={scheduleEnd ? scheduleEnd.slice(0, 16) : ''} onChange={e => setScheduleEnd(e.target.value ? new Date(e.target.value).toISOString() : '')} style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #d9d9d9' }} />
+                  <DatePicker showTime format="YYYY-MM-DD HH:mm" placeholder="選擇結束時間"
+                    value={scheduleEnd ? dayjs(scheduleEnd) : null}
+                    onChange={v => setScheduleEnd(v ? v.toISOString() : '')}
+                    style={{ marginLeft: 8 }} />
                 </div>
               </div>
             )}
