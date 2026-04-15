@@ -174,9 +174,20 @@ instance.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
+    // Normalize error message from various API response formats
+    const data = err.response?.data;
+    const errorMsg = data?.error || data?.message || err.message || '未知錯誤';
+    err.displayMessage = errorMsg;
     return Promise.reject(err);
   },
 );
+
+// Extract user-friendly error message from API errors
+export function getErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object' && 'displayMessage' in err) return (err as { displayMessage: string }).displayMessage;
+  if (err instanceof Error) return err.message;
+  return '未知錯誤';
+}
 
 // ── Typed helpers ──────────────────────────────────────
 
