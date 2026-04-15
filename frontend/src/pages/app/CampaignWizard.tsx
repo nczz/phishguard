@@ -310,6 +310,16 @@ export default function CampaignWizard() {
                   ? `${smtpProfile.name}（${smtpProfile.from_address}）`
                   : <Alert type="warning" title="尚未設定 SMTP" showIcon banner />}
               </Descriptions.Item>
+              <Descriptions.Item label="預估發送時間">
+                {(() => {
+                  const rate = smtpProfile?.mailer_type === 'ses' ? 12 : smtpProfile?.mailer_type === 'mailgun' ? 40 : 3;
+                  const secs = Math.ceil(estimatedCount / rate);
+                  if (secs < 60) return `約 ${secs} 秒`;
+                  if (secs < 3600) return `約 ${Math.ceil(secs / 60)} 分鐘`;
+                  return `約 ${(secs / 3600).toFixed(1)} 小時`;
+                })()}
+                <Text type="secondary" style={{ fontSize: 12 }}>（依 {smtpProfile?.mailer_type?.toUpperCase() || 'SMTP'} 速率限制自動控制）</Text>
+              </Descriptions.Item>
             </Descriptions>
           </Card>
 

@@ -158,9 +158,28 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 	if c.ScheduleStart != nil && c.ScheduleStart.After(now) {
 		schedStart = *c.ScheduleStart
 	}
-	schedEnd := schedStart // immediate: all at start
+	schedEnd := schedStart
 	if c.SendBy != nil && c.SendBy.After(schedStart) {
 		schedEnd = *c.SendBy
+	}
+
+	// Validate: ensure time window is sufficient for the number of recipients
+	// based on the SMTP profile's provider rate limits
+	var smtpProfile model.SMTPProfile
+	s.CampaignRepo.DB.First(&smtpProfile, c.SMTPProfileID)
+	minSecondsNeeded := estimateMinSendTime(len(recipients), smtpProfile.MailerType)
+
+	if schedEnd.After(schedStart) {
+		// Scheduled mode: count valid seconds in window
+		validSeconds := countValidSeconds(schedStart, schedEnd, c.WorkingHoursOnly, c.SkipWeekends)
+		if validSeconds < minSecondsNeeded {
+			// Auto-extend: calculate how much time we actually need and extend schedEnd
+			needed := time.Duration(minSecondsNeeded) * time.Second
+			newEnd := schedStart.Add(needed * 2) // 2x buffer for working hours gaps
+			schedEnd = newEnd
+			c.SendBy = &schedEnd
+			s.CampaignRepo.Update(c)
+		}
 	}
 
 	slots := generateTimeSlots(schedStart, schedEnd, c.WorkingHoursOnly, c.SkipWeekends, len(recipients))
@@ -249,4 +268,38 @@ func isValidSendTime(t time.Time, workingHoursOnly, skipWeekends bool) bool {
 		}
 	}
 	return true
+}
+
+// estimateMinSendTime returns the minimum seconds needed to send N emails
+// based on provider rate limits.
+func estimateMinSendTime(recipientCount int, mailerType string) int {
+	// Rates from mailer/ratelimit.go ProviderLimits
+	ratePerSec := map[string]int{
+		"ses":     12,
+		"mailgun": 40,
+		"smtp":    3,
+	}
+	rate, ok := ratePerSec[mailerType]
+	if !ok {
+		rate = 3
+	}
+	seconds := recipientCount / rate
+	if recipientCount%rate > 0 {
+		seconds++
+	}
+	return seconds
+}
+
+// countValidSeconds counts how many seconds in a time window are valid for sending.
+func countValidSeconds(start, end time.Time, workingHoursOnly, skipWeekends bool) int {
+	count := 0
+	cursor := start.Truncate(time.Second)
+	// Sample every minute to avoid counting millions of seconds
+	for !cursor.After(end) {
+		if isValidSendTime(cursor, workingHoursOnly, skipWeekends) {
+			count += 60 // count the whole minute
+		}
+		cursor = cursor.Add(time.Minute)
+	}
+	return count
 }
