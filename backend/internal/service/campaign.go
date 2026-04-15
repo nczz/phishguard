@@ -119,7 +119,17 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		return fmt.Errorf("find recipients: %w", err)
 	}
 
-	// Apply selection mode
+	// 1. Cooldown first: exclude recipients tested in last 30 days
+	filtered := make([]model.Recipient, 0, len(recipients))
+	for _, r := range recipients {
+		recent, _ := s.ResultRepo.FindRecentByRecipientEmail(tenantID, r.Email, 30)
+		if len(recent) == 0 {
+			filtered = append(filtered, r)
+		}
+	}
+	recipients = filtered
+
+	// 2. Then apply selection mode on the eligible pool
 	switch c.SelectionMode {
 	case "random":
 		rand.Shuffle(len(recipients), func(i, j int) { recipients[i], recipients[j] = recipients[j], recipients[i] })
@@ -129,21 +139,17 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		}
 		recipients = recipients[:n]
 	case "department":
-		recipients, err = s.RecipientRepo.FindByDepartments(tenantID, c.Departments)
-		if err != nil {
-			return fmt.Errorf("find by departments: %w", err)
+		dept := make([]model.Recipient, 0)
+		for _, r := range recipients {
+			for _, d := range c.Departments {
+				if r.Department == d {
+					dept = append(dept, r)
+					break
+				}
+			}
 		}
+		recipients = dept
 	}
-
-	// Cooldown: exclude recipients tested in last 30 days
-	filtered := make([]model.Recipient, 0, len(recipients))
-	for _, r := range recipients {
-		recent, _ := s.ResultRepo.FindRecentByRecipientEmail(tenantID, r.Email, 30)
-		if len(recent) == 0 {
-			filtered = append(filtered, r)
-		}
-	}
-	recipients = filtered
 
 	if len(recipients) == 0 {
 		return fmt.Errorf("no recipients selected")
