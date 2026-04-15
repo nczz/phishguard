@@ -1,4 +1,4 @@
-import { Typography, Card, Row, Col, Divider, Tag } from 'antd';
+import { Typography, Card, Row, Col, Divider } from 'antd';
 import {
   SettingOutlined, TeamOutlined, AppstoreOutlined, SendOutlined,
   MailOutlined, GlobalOutlined, FormOutlined, BarChartOutlined,
@@ -140,58 +140,94 @@ export default function FlowDiagram() {
 
       <Divider />
 
-      {/* ── Architecture ── */}
-      <Title level={4}>⚙️ 系統架構</Title>
-      <Paragraph type="secondary">PhishGuard 由四個核心元件組成：</Paragraph>
-      <Row gutter={16}>
-        {[
-          { title: 'API Server', port: ':8080', desc: '處理所有管理操作：登入、建立測試、查看報表。前端 UI 透過此 API 操作。', color: '#1677ff' },
-          { title: 'Track Server', port: ':8090', desc: '處理收件人行為追蹤：開信像素、連結點擊、表單提交。極輕量、低延遲。', color: '#13c2c2' },
-          { title: 'Mail Worker', port: '背景', desc: '消費發信佇列，透過 SMTP/Mailgun/SES 發送信件。可水平擴展。', color: '#faad14' },
-          { title: 'MySQL + Redis', port: '資料層', desc: 'MySQL 儲存所有業務資料（租戶隔離）。Redis 作為發信佇列。', color: '#722ed1' },
-        ].map(c => (
-          <Col xs={24} sm={12} lg={6} key={c.title}>
-            <Card size="small" style={{ borderTop: `3px solid ${c.color}` }}>
-              <Text strong>{c.title}</Text> <Tag>{c.port}</Tag>
-              <Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0, fontSize: 12 }}>{c.desc}</Paragraph>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      <Divider />
-
       {/* ── Data Flow ── */}
       <Title level={4}>🔄 資料流向</Title>
-      <Card>
-        <pre style={{ margin: 0, fontSize: 13, lineHeight: 1.8, overflow: 'auto' }}>{`
-  客戶操作                    系統處理                      收件人行為
-  ────────                    ────────                      ────────
-  選情境 + 選對象              │                              │
-       │                      ▼                              │
-       └──→ 建立 Campaign ──→ 產生每人唯一 rid               │
-                               │                              │
-                               ▼                              │
-                          渲染信件模板                         │
-                          ├ 替換 {{.FirstName}} 等變數         │
-                          ├ 嵌入追蹤像素 (1x1 GIF)            │
-                          └ 改寫連結為追蹤 URL                 │
-                               │                              │
-                               ▼                              │
-                          推入發信佇列 ──→ Worker 發信         │
-                                                              │
-                                              收件人開信 ──→ 載入像素 ──→ Track Server 記錄 opened
-                                              收件人點連結 ──→ Track Server 記錄 clicked ──→ 導向 Landing Page
-                                              收件人提交表單 ──→ Track Server 記錄 submitted ──→ 顯示教育頁
-                                              收件人舉報 ──→ Track Server 記錄 reported ✓
-                               │
-                               ▼
-                          報表即時更新
-                          ├ 釣魚漏斗
-                          ├ 部門風險排名
-                          └ 統計摘要
-`}</pre>
-      </Card>
+      <Paragraph type="secondary">從建立測試到產出報表，資料如何在系統中流動：</Paragraph>
+
+      {/* Row 1: 客戶操作 */}
+      <div style={{ background: '#f0f5ff', borderRadius: 12, padding: 24, marginBottom: 4 }}>
+        <Text type="secondary" strong style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>👤 您的操作</Text>
+        <Row gutter={12} style={{ marginTop: 12 }}>
+          {['選擇情境', '選擇對象', '確認發送'].map((s, i) => (
+            <Col span={8} key={i}>
+              <Card size="small" style={{ textAlign: 'center', borderColor: '#1677ff' }}>
+                <Text strong style={{ color: '#1677ff' }}>{s}</Text>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </div>
+      {arrowDown}
+
+      {/* Row 2: 系統處理 */}
+      <div style={{ background: '#fff7e6', borderRadius: 12, padding: 24, marginBottom: 4 }}>
+        <Text type="secondary" strong style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>⚙️ 系統自動處理</Text>
+        <Row gutter={12} style={{ marginTop: 12 }}>
+          {[
+            { title: '產生追蹤 ID', desc: '每位收件人分配唯一 rid' },
+            { title: '渲染信件', desc: '替換變數、嵌入追蹤像素、改寫連結' },
+            { title: '排程發送', desc: '推入佇列，分散時間發送' },
+          ].map((s, i) => (
+            <Col span={8} key={i}>
+              <Card size="small" style={{ borderColor: '#faad14' }}>
+                <Text strong style={{ color: '#d48806' }}>{s.title}</Text>
+                <br /><Text type="secondary" style={{ fontSize: 12 }}>{s.desc}</Text>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </div>
+      {arrowDown}
+
+      {/* Row 3: 信件到達 */}
+      <div style={{ background: '#f6ffed', borderRadius: 12, padding: 24, marginBottom: 4 }}>
+        <Text type="secondary" strong style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>📬 收件人行為 → 系統追蹤</Text>
+        <div style={{ marginTop: 12 }}>
+          {[
+            { action: '開啟信件', track: '追蹤像素被載入', record: '記錄 opened', color: '#13c2c2', emoji: '📧' },
+            { action: '點擊連結', track: '追蹤 URL 被訪問', record: '記錄 clicked → 導向 Landing Page', color: '#faad14', emoji: '🔗' },
+            { action: '提交表單', track: 'Landing Page 表單送出', record: '記錄 submitted → 顯示教育頁', color: '#ff4d4f', emoji: '📝' },
+            { action: '舉報信件', track: '舉報按鈕被點擊', record: '記錄 reported ✓', color: '#52c41a', emoji: '🚨' },
+          ].map((s, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ width: 40, textAlign: 'center', fontSize: 20 }}>{s.emoji}</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Card size="small" style={{ flex: 1, borderColor: s.color, marginBottom: 0 }}>
+                  <Text strong>{s.action}</Text>
+                </Card>
+                <span style={{ color: '#bbb', fontSize: 18 }}>→</span>
+                <Card size="small" style={{ flex: 1, background: '#fafafa', marginBottom: 0 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{s.track}</Text>
+                </Card>
+                <span style={{ color: '#bbb', fontSize: 18 }}>→</span>
+                <Card size="small" style={{ flex: 1.5, borderColor: s.color, borderStyle: 'dashed', marginBottom: 0 }}>
+                  <Text style={{ color: s.color, fontSize: 12 }} strong>{s.record}</Text>
+                </Card>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {arrowDown}
+
+      {/* Row 4: 報表 */}
+      <div style={{ background: '#f9f0ff', borderRadius: 12, padding: 24 }}>
+        <Text type="secondary" strong style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>📊 即時報表產出</Text>
+        <Row gutter={12} style={{ marginTop: 12 }}>
+          {[
+            { title: '釣魚漏斗', desc: '寄達→開信→點擊→提交→舉報 逐層轉換', color: '#722ed1' },
+            { title: '部門風險排名', desc: '各部門點擊率排序，識別高風險群體', color: '#722ed1' },
+            { title: '統計摘要 + PDF', desc: '關鍵比率一目瞭然，可匯出報告', color: '#722ed1' },
+          ].map((s, i) => (
+            <Col span={8} key={i}>
+              <Card size="small" style={{ borderColor: s.color }}>
+                <Text strong style={{ color: s.color }}>{s.title}</Text>
+                <br /><Text type="secondary" style={{ fontSize: 12 }}>{s.desc}</Text>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </div>
     </div>
   );
 }
