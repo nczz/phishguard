@@ -132,7 +132,7 @@ export default function SMTPSettings() {
             </>
           )}
 
-          <Form.Item name="from_address" label={<FieldHelp label="寄件地址" tip="收件人看到的寄件者 email 地址，建議使用公司域名" />} rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="from_address" label={<FieldHelp label="寄件地址" tip="收件人看到的寄件者 email 地址。Mailgun 用戶：域名必須與 Mailgun Domain 一致（如 noreply@yourdomain.com）" />} rules={[{ required: true, type: 'email' }]}><Input placeholder="noreply@yourdomain.com" /></Form.Item>
           <Form.Item name="from_name" label="寄件人名稱"><Input /></Form.Item>
         </Form>
       </Modal>

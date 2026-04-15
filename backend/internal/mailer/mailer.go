@@ -118,16 +118,22 @@ func (m *MailgunMailer) Name() string { return "mailgun" }
 func (m *MailgunMailer) Send(ctx context.Context, msg *Message) error {
 	mg := mailgun.NewMailgun(m.Domain, m.APIKey)
 
-	// Mailgun requires "Name <email>" format
-	from := fmt.Sprintf("%s <%s>", msg.FromName, msg.From)
-	if msg.FromName == "" {
-		from = fmt.Sprintf("%s <%s>", msg.From, msg.From)
+	// Mailgun requires RFC 5322 format: "Name <email@domain>"
+	// The email domain MUST match the Mailgun sending domain
+	from := msg.From
+	if msg.FromName != "" {
+		from = fmt.Sprintf("%s <%s>", msg.FromName, msg.From)
 	}
 
 	message := mg.NewMessage(from, msg.Subject, msg.TextBody, msg.To)
 	if msg.HTMLBody != "" {
 		message.SetHtml(msg.HTMLBody)
 	}
+	// Disable Mailgun's own tracking — we use our own tracking system
+	message.SetTracking(false)
+	message.SetTrackingClicks(false)
+	message.SetTrackingOpens(false)
+
 	for k, v := range msg.Headers {
 		message.AddHeader(k, v)
 	}
