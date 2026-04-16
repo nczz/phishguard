@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS tenants (
     max_campaigns_per_year INT DEFAULT NULL,
     max_emails_per_month INT DEFAULT NULL,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    config          JSON,
+    config          TEXT,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
