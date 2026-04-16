@@ -64,6 +64,7 @@ type RecipientResult struct {
 	SentAt      *time.Time `json:"sent_at"`
 	OpenedAt    *time.Time `json:"opened_at"`
 	ClickedAt   *time.Time `json:"clicked_at"`
+	DownloadedAt *time.Time `json:"downloaded_at"`
 	SubmittedAt *time.Time `json:"submitted_at"`
 	ReportedAt  *time.Time `json:"reported_at"`
 }
@@ -109,9 +110,9 @@ func (h *Handler) ExportCampaignCSV(c *gin.Context) {
 	c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
 
 	w := csv.NewWriter(c.Writer)
-	w.Write([]string{"email", "last_name", "first_name", "department", "status", "sent_at", "opened_at", "clicked_at", "submitted_at", "reported_at"})
+	w.Write([]string{"email", "last_name", "first_name", "department", "status", "sent_at", "opened_at", "clicked_at", "downloaded_at", "submitted_at", "reported_at"})
 	for _, r := range results {
-		row := []string{"", "", "", "", r.Status, fmtTime(r.SentAt), fmtTime(r.OpenedAt), fmtTime(r.ClickedAt), fmtTime(r.SubmittedAt), fmtTime(r.ReportedAt)}
+		row := []string{"", "", "", "", r.Status, fmtTime(r.SentAt), fmtTime(r.OpenedAt), fmtTime(r.ClickedAt), fmtTime(r.DownloadedAt), fmtTime(r.SubmittedAt), fmtTime(r.ReportedAt)}
 		if r.Recipient != nil {
 			row[0] = r.Recipient.Email
 			row[1] = r.Recipient.LastName

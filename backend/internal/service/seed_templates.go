@@ -89,7 +89,7 @@ func seedTemplates(tenantID int64) []model.EmailTemplate {
 <tr><td style="padding:8px;border:1px solid #eee;background:#fafafa">到期日</td><td style="padding:8px;border:1px solid #eee;color:#ff4d4f">2026/04/20</td></tr>
 </table>
 <p>請登入財務系統確認發票內容並完成簽核：</p>
-<p style="text-align:center;margin:24px 0"><a href="{{.TrackURL}}" style="background:#fa8c16;color:#fff;padding:12px 32px;text-decoration:none;border-radius:4px;font-size:15px">登入查看發票</a></p>
+<p style="text-align:center;margin:24px 0"><a href="{{.DownloadURL}}" style="background:#fa8c16;color:#fff;padding:12px 32px;text-decoration:none;border-radius:4px;font-size:15px">📎 下載發票 PDF</a></p>
 <hr style="border:none;border-top:1px solid #eee;margin:20px 0">
 <p style="color:#999;font-size:12px">財務部 | 分機 #3100 | 此為系統自動通知，請勿直接回覆</p>
 </div></div>`},

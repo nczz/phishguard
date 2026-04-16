@@ -84,6 +84,7 @@ h2 { color: #1677ff; border-bottom: 2px solid #1677ff; padding-bottom: 6px; marg
 <tr><td>寄達</td><td>%d</td><td>%s</td><td><div class="bar" style="width:%dpx;background:#1677ff">&nbsp;</div></td></tr>
 <tr><td>開信</td><td>%d</td><td>%s</td><td><div class="bar" style="width:%dpx;background:#13c2c2">&nbsp;</div></td></tr>
 <tr><td>點擊</td><td>%d</td><td>%s</td><td><div class="bar" style="width:%dpx;background:#faad14">&nbsp;</div></td></tr>
+<tr><td>下載</td><td>%d</td><td>%s</td><td><div class="bar" style="width:%dpx;background:#722ed1">&nbsp;</div></td></tr>
 <tr><td>提交</td><td>%d</td><td>%s</td><td><div class="bar" style="width:%dpx;background:#ff4d4f">&nbsp;</div></td></tr>
 <tr><td>舉報</td><td>%d</td><td>%s</td><td><div class="bar" style="width:%dpx;background:#52c41a">&nbsp;</div></td></tr>
 </table>
@@ -102,6 +103,7 @@ h2 { color: #1677ff; border-bottom: 2px solid #1677ff; padding-bottom: 6px; marg
 		funnel.Sent, pct(funnel.Sent), barWidth(funnel.Sent, funnel.Total),
 		funnel.Opened, pct(funnel.Opened), barWidth(funnel.Opened, funnel.Total),
 		funnel.Clicked, pct(funnel.Clicked), barWidth(funnel.Clicked, funnel.Total),
+		funnel.Downloaded, pct(funnel.Downloaded), barWidth(funnel.Downloaded, funnel.Total),
 		funnel.Submitted, pct(funnel.Submitted), barWidth(funnel.Submitted, funnel.Total),
 		funnel.Reported, pct(funnel.Reported), barWidth(funnel.Reported, funnel.Total),
 		deptRows.String(),

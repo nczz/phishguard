@@ -112,6 +112,7 @@ export interface FunnelStats {
   sent: number;
   opened: number;
   clicked: number;
+  downloaded: number;
   submitted: number;
   reported: number;
 }

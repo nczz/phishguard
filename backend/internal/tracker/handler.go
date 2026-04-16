@@ -99,11 +99,21 @@ func (h *Handler) HandleDownload(c *gin.Context) {
 	now := time.Now()
 	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
 	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
-	recordEvent(h.DB, result.ID, result.CampaignID, "downloaded", c.Request, map[string]interface{}{
+	h.DB.Model(&result).Where("downloaded_at IS NULL").Update("downloaded_at", now)
+	recordEvent(h.DB, result.ID, result.CampaignID, model.EventDownloaded, c.Request, map[string]interface{}{
 		"filename": c.Param("filename"),
 	})
 
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("<html><body><h1>File not available</h1></body></html>"))
+	// Show education page
+	html := "<html><body><h1>Training Complete</h1><p>This was a phishing simulation.</p></body></html>"
+	var campaign model.Campaign
+	if h.DB.First(&campaign, result.CampaignID).Error == nil && campaign.ScenarioID != nil {
+		var scenario model.Scenario
+		if h.DB.First(&scenario, *campaign.ScenarioID).Error == nil && scenario.EducationHTML != "" {
+			html = scenario.EducationHTML
+		}
+	}
+	serveHTML(c, html)
 }
 
 func (h *Handler) HandleSubmit(c *gin.Context) {

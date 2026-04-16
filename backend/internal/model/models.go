@@ -16,9 +16,10 @@ const (
 	EventSent      = "sent"
 	EventOpened    = "opened"
 	EventClicked   = "clicked"
-	EventSubmitted = "submitted"
-	EventReported  = "reported"
-	EventError     = "error"
+	EventSubmitted   = "submitted"
+	EventReported    = "reported"
+	EventDownloaded  = "downloaded"
+	EventError       = "error"
 )
 
 type Tenant struct {
@@ -179,8 +180,9 @@ type Result struct {
 	SendDate    *time.Time `json:"send_date"`
 	SentAt      *time.Time `json:"sent_at"`
 	OpenedAt    *time.Time `json:"opened_at"`
-	ClickedAt   *time.Time `json:"clicked_at"`
-	SubmittedAt *time.Time `json:"submitted_at"`
+	ClickedAt    *time.Time `json:"clicked_at"`
+	DownloadedAt *time.Time `json:"downloaded_at"`
+	SubmittedAt  *time.Time `json:"submitted_at"`
 	ReportedAt  *time.Time `json:"reported_at"`
 	ErrorDetail string     `gorm:"type:text" json:"error_detail"`
 	Recipient   *Recipient `gorm:"foreignKey:RecipientID" json:"recipient,omitempty"`

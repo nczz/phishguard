@@ -239,6 +239,10 @@ func renderTemplate(html string, recipient *model.Recipient, trackBase, rid stri
 	trackClick := fmt.Sprintf("%s/t/c/%s", trackBase, rid)
 	result = replaceAll(result, "{{.TrackURL}}", trackClick)
 
+	// Replace download URL
+	downloadURL := fmt.Sprintf("%s/t/d/%s/attachment", trackBase, rid)
+	result = replaceAll(result, "{{.DownloadURL}}", downloadURL)
+
 	// Replace report URL
 	reportURL := fmt.Sprintf("%s/t/r/%s", trackBase, rid)
 	result = replaceAll(result, "{{.ReportURL}}", reportURL)

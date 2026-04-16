@@ -184,6 +184,7 @@ CREATE TABLE IF NOT EXISTS results (
     sent_at         DATETIME DEFAULT NULL,
     opened_at       DATETIME DEFAULT NULL,
     clicked_at      DATETIME DEFAULT NULL,
+    downloaded_at   DATETIME DEFAULT NULL,
     submitted_at    DATETIME DEFAULT NULL,
     reported_at     DATETIME DEFAULT NULL,
     error_detail    TEXT DEFAULT NULL,

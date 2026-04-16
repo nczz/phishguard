@@ -8,12 +8,13 @@ import (
 )
 
 type FunnelStats struct {
-	Total     int64 `json:"total"`
-	Sent      int64 `json:"sent"`
-	Opened    int64 `json:"opened"`
-	Clicked   int64 `json:"clicked"`
-	Submitted int64 `json:"submitted"`
-	Reported  int64 `json:"reported"`
+	Total      int64 `json:"total"`
+	Sent       int64 `json:"sent"`
+	Opened     int64 `json:"opened"`
+	Clicked    int64 `json:"clicked"`
+	Downloaded int64 `json:"downloaded"`
+	Submitted  int64 `json:"submitted"`
+	Reported   int64 `json:"reported"`
 }
 
 type DepartmentStat struct {
@@ -56,6 +57,7 @@ func (r *ResultRepo) GetFunnelStats(tenantID, campaignID int64) (*FunnelStats, e
 			SUM(CASE WHEN sent_at IS NOT NULL THEN 1 ELSE 0 END) AS sent,
 			SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) AS opened,
 			SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) AS clicked,
+			SUM(CASE WHEN downloaded_at IS NOT NULL THEN 1 ELSE 0 END) AS downloaded,
 			SUM(CASE WHEN submitted_at IS NOT NULL THEN 1 ELSE 0 END) AS submitted,
 			SUM(CASE WHEN reported_at IS NOT NULL THEN 1 ELSE 0 END) AS reported`).
 		Where("tenant_id = ? AND campaign_id = ?", tenantID, campaignID).

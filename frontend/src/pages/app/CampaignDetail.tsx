@@ -69,6 +69,7 @@ export default function CampaignDetail() {
     { name: '寄達', value: funnel.sent },
     { name: '開信', value: funnel.opened },
     { name: '點擊', value: funnel.clicked },
+    { name: '下載', value: funnel.downloaded },
     { name: '提交', value: funnel.submitted },
     { name: '舉報', value: funnel.reported },
   ];
