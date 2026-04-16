@@ -1,4 +1,4 @@
--- PhishGuard Initial Schema
+-- PhishGuard Complete Schema (fresh install)
 -- MySQL 8.0+
 
 CREATE TABLE IF NOT EXISTS tenants (
@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS tenants (
     plan            VARCHAR(20) NOT NULL DEFAULT 'pro',
     max_recipients  INT NOT NULL DEFAULT 1000,
     max_campaigns_per_year INT DEFAULT NULL,
+    max_emails_per_month INT DEFAULT NULL,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     config          JSON,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS recipients (
     first_name      VARCHAR(100) DEFAULT '',
     last_name       VARCHAR(100) DEFAULT '',
     department      VARCHAR(100) DEFAULT '',
+    gender          VARCHAR(10) DEFAULT '',
     position        VARCHAR(100) DEFAULT '',
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_recipients_tenant (tenant_id),
@@ -139,8 +141,14 @@ CREATE TABLE IF NOT EXISTS campaigns (
     page_id         BIGINT DEFAULT NULL,
     smtp_profile_id BIGINT NOT NULL,
     phish_url       VARCHAR(500) NOT NULL,
+    selection_mode  VARCHAR(20) NOT NULL DEFAULT 'all',
+    sample_percent  INT NOT NULL DEFAULT 100,
+    departments     TEXT,
     launched_at     DATETIME DEFAULT NULL,
     send_by         DATETIME DEFAULT NULL,
+    schedule_start  DATETIME DEFAULT NULL,
+    working_hours_only BOOLEAN NOT NULL DEFAULT FALSE,
+    skip_weekends   BOOLEAN NOT NULL DEFAULT FALSE,
     completed_at    DATETIME DEFAULT NULL,
     created_by      BIGINT DEFAULT NULL,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -207,7 +215,7 @@ CREATE TABLE IF NOT EXISTS auto_test_configs (
     frequency       VARCHAR(20) NOT NULL DEFAULT 'quarterly',
     target_mode     VARCHAR(20) NOT NULL DEFAULT 'random',
     sample_percent  INT NOT NULL DEFAULT 30,
-    difficulty      VARCHAR(10) NOT NULL DEFAULT 'mixed',
+    difficulty      INT NOT NULL DEFAULT 1,
     notify_emails   JSON,
     next_run_at     DATETIME DEFAULT NULL,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
