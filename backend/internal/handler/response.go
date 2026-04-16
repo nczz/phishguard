@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,5 +35,6 @@ func notFound(c *gin.Context, message string) {
 }
 
 func serverError(c *gin.Context, err error) {
-	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	log.Printf("[ERROR] %s %s: %v", c.Request.Method, c.Request.URL.Path, err)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 }

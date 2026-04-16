@@ -17,7 +17,15 @@
 # Environment
 .env
 .env.local
+.env.prod
+.env.aio
 .env.*.local
+
+# Certificates
+deploy/certs/
+*.pem
+*.key
+*.crt
 
 # IDE
 .idea/

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/model"
 	"gorm.io/gorm"
 )
 
@@ -45,6 +45,15 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	t.GET("/landing", h.HandleLanding)
 }
 
+// serveHTML writes HTML with CSP headers that block all script execution.
+// HTML content is NOT sanitized to preserve tenant's visual design.
+// CSP script-src 'none' blocks inline scripts, event handlers, and javascript: URLs at browser level.
+func serveHTML(c *gin.Context, html string) {
+	c.Header("Content-Security-Policy", "script-src 'none'; frame-ancestors 'none'")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
 func (h *Handler) HandleOpen(c *gin.Context) {
 	var result model.Result
 	if err := h.DB.Where("rid = ?", c.Param("rid")).First(&result).Error; err != nil {
@@ -56,8 +65,8 @@ func (h *Handler) HandleOpen(c *gin.Context) {
 	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
 	recordEvent(h.DB, result.ID, result.CampaignID, model.EventOpened, c.Request, nil)
 
-	c.Data(http.StatusOK, "image/gif", transparentGIF)
 	c.Header("Cache-Control", "no-store")
+	c.Data(http.StatusOK, "image/gif", transparentGIF)
 }
 
 func (h *Handler) HandleClick(c *gin.Context) {
@@ -129,7 +138,7 @@ func (h *Handler) HandleSubmit(c *gin.Context) {
 		}
 	}
 
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	serveHTML(c, html)
 }
 
 func (h *Handler) HandleReport(c *gin.Context) {
@@ -199,7 +208,7 @@ func (h *Handler) HandleLanding(c *gin.Context) {
 	html := strings.ReplaceAll(page.HTML, "{{.RID}}", rid)
 	html = strings.ReplaceAll(html, "{{.SubmitURL}}", phishURL+"/t/s/"+rid)
 
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	serveHTML(c, html)
 }
 
 func recordEvent(db *gorm.DB, resultID, campaignID int64, eventType string, r *http.Request, detail map[string]interface{}) {

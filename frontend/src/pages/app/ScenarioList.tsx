@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Row, Col, Tag, Badge, Empty, Spin, Typography, Button, Drawer, Form, Input, Select, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
 import FieldHelp, { tips } from '../../components/FieldHelp';
 import type { Scenario, EmailTemplate, LandingPage } from '../../api/client';
@@ -137,7 +138,7 @@ export default function ScenarioList() {
       </Drawer>
 
       <Drawer title="教育頁預覽" open={previewOpen} onClose={() => setPreviewOpen(false)}>
-        <div dangerouslySetInnerHTML={{ __html: previewHtml }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, minHeight: 400 }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, minHeight: 400 }} />
       </Drawer>
     </div>
   );

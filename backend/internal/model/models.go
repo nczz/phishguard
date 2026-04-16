@@ -112,6 +112,7 @@ type Recipient struct {
 	Department string    `gorm:"size:100" json:"department"`
 	Gender     string    `gorm:"size:10" json:"gender"`
 	Position   string    `gorm:"size:100" json:"position"`
+	IsActive   bool      `gorm:"not null;default:true" json:"is_active"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 

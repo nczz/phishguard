@@ -1,4 +1,4 @@
-module github.com/phishguard/phishguard
+module github.com/nczz/phishguard
 
 go 1.25.0
 

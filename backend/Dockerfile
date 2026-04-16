@@ -7,6 +7,8 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o /bin/phishguard ./cmd/${TARGET}
 
 FROM alpine:3.19
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata && \
+    addgroup -S app && adduser -S app -G app
 COPY --from=builder /bin/phishguard /usr/local/bin/phishguard
+USER app
 ENTRYPOINT ["phishguard"]

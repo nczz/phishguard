@@ -3,7 +3,7 @@ package repo
 import (
 	"time"
 
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/model"
 	"gorm.io/gorm"
 )
 

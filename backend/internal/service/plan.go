@@ -1,6 +1,6 @@
 package service
 
-import "github.com/phishguard/phishguard/internal/model"
+import "github.com/nczz/phishguard/internal/model"
 
 type PlanConfig struct {
 	MaxRecipients       int  `json:"max_recipients"`

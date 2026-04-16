@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/phishguard/phishguard/internal/model"
-	"github.com/phishguard/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/repo"
 )
 
 type CreateCampaignRequest struct {
@@ -126,7 +126,7 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		return fmt.Errorf("find recipients: %w", err)
 	}
 
-	// 1. Cooldown first: exclude recipients tested in last 30 days
+	// 1. Cooldown: exclude recipients tested in last 30 days
 	filtered := make([]model.Recipient, 0, len(recipients))
 	for _, r := range recipients {
 		recent, _ := s.ResultRepo.FindRecentByRecipientEmail(tenantID, r.Email, 30)
@@ -136,7 +136,16 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 	}
 	recipients = filtered
 
-	// 2. Then apply selection mode on the eligible pool
+	// 2. Validate emails: exclude invalid or blocked addresses before sampling
+	validRecipients := make([]model.Recipient, 0, len(recipients))
+	for _, r := range recipients {
+		if isValidRecipientEmail(r.Email) {
+			validRecipients = append(validRecipients, r)
+		}
+	}
+	recipients = validRecipients
+
+	// 3. Apply selection mode on the eligible pool
 	switch c.SelectionMode {
 	case "sample":
 		rand.Shuffle(len(recipients), func(i, j int) { recipients[i], recipients[j] = recipients[j], recipients[i] })
@@ -157,16 +166,6 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		}
 		recipients = dept
 	}
-
-	// Validate recipient emails — reject obviously invalid or abusive targets
-	validRecipients := make([]model.Recipient, 0, len(recipients))
-	for _, r := range recipients {
-		if !isValidRecipientEmail(r.Email) {
-			continue // skip invalid emails silently
-		}
-		validRecipients = append(validRecipients, r)
-	}
-	recipients = validRecipients
 
 	if len(recipients) == 0 {
 		return fmt.Errorf("no recipients selected")

@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
-	"github.com/phishguard/phishguard/internal/service"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/service"
 )
 
 func (h *Handler) CreateCampaign(c *gin.Context) {
@@ -34,7 +34,7 @@ func (h *Handler) CreateCampaign(c *gin.Context) {
 	}
 	campaign, err := h.CampaignService.CreateCampaign(tid, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, campaign)
@@ -44,7 +44,7 @@ func (h *Handler) ListCampaigns(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	campaigns, err := h.CampaignRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, campaigns)
@@ -90,7 +90,7 @@ func (h *Handler) LaunchCampaign(c *gin.Context) {
 	}
 
 	if err := h.CampaignService.LaunchCampaign(tid, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "campaign launched"})
@@ -104,7 +104,7 @@ func (h *Handler) DeleteCampaign(c *gin.Context) {
 		return
 	}
 	if err := h.CampaignRepo.Delete(tid, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})

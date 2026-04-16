@@ -106,4 +106,4 @@ sudo certbot --nginx -d app.yourdomain.com -d t.yourdomain.com
 
 ## License
 
-Proprietary — All rights reserved.
+MIT License — see [LICENSE](LICENSE) for details.

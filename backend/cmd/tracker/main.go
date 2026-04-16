@@ -4,9 +4,9 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/config"
-	"github.com/phishguard/phishguard/internal/db"
-	"github.com/phishguard/phishguard/internal/tracker"
+	"github.com/nczz/phishguard/config"
+	"github.com/nczz/phishguard/internal/db"
+	"github.com/nczz/phishguard/internal/tracker"
 )
 
 func main() {

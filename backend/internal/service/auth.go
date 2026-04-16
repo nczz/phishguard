@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
-	"github.com/phishguard/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/repo"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )

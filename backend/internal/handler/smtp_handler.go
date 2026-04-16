@@ -8,16 +8,16 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/mailer"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/mailer"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
 )
 
 func (h *Handler) ListSMTPProfiles(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	profiles, err := h.SMTPRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, profiles)
@@ -75,7 +75,7 @@ func (h *Handler) CreateSMTPProfile(c *gin.Context) {
 		SESSecretKey:  []byte(req.SESSecretKey),
 	}
 	if err := h.SMTPRepo.Create(&p); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, p)
@@ -129,7 +129,7 @@ func (h *Handler) UpdateSMTPProfile(c *gin.Context) {
 	if req.SESSecretKey != "" { existing.SESSecretKey = []byte(req.SESSecretKey) }
 
 	if err := h.SMTPRepo.Update(tid, existing); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, existing)
@@ -169,7 +169,7 @@ func (h *Handler) TestSMTPProfile(c *gin.Context) {
 	}
 	m, err := mailer.NewMailer(profile.MailerType, config)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	msg := &mailer.Message{
@@ -180,7 +180,7 @@ func (h *Handler) TestSMTPProfile(c *gin.Context) {
 		TextBody: "This is a test email.",
 	}
 	if err := m.Send(context.Background(), msg); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "test email sent"})

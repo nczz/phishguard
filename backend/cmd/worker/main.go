@@ -9,12 +9,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-	"github.com/phishguard/phishguard/config"
-	"github.com/phishguard/phishguard/internal/db"
-	"github.com/phishguard/phishguard/internal/mailer"
-	"github.com/phishguard/phishguard/internal/model"
-	"github.com/phishguard/phishguard/internal/repo"
-	"github.com/phishguard/phishguard/internal/service"
+	"github.com/nczz/phishguard/config"
+	"github.com/nczz/phishguard/internal/db"
+	"github.com/nczz/phishguard/internal/mailer"
+	"github.com/nczz/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/service"
 	"gorm.io/gorm"
 )
 
@@ -142,6 +142,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 		if rid == "" {
 			rid = uuid.New().String()
 			r.RID = rid
+			database.Model(r).Update("rid", rid)
 		}
 		trackBase := cfg.TrackerBaseURL
 		htmlBody := renderTemplate(tmpl.HTMLBody, r.Recipient, trackBase, rid)

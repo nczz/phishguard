@@ -3,8 +3,8 @@ package repo
 import (
 	"context"
 
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
 	"gorm.io/gorm"
 )
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/phishguard/phishguard/internal/mailer"
-	"github.com/phishguard/phishguard/internal/model"
-	"github.com/phishguard/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/mailer"
+	"github.com/nczz/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/repo"
 	"gorm.io/gorm"
 )
 

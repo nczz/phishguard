@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/phishguard/phishguard/config"
-	"github.com/phishguard/phishguard/internal/db"
-	"github.com/phishguard/phishguard/internal/handler"
-	"github.com/phishguard/phishguard/internal/repo"
-	"github.com/phishguard/phishguard/internal/service"
+	"github.com/nczz/phishguard/config"
+	"github.com/nczz/phishguard/internal/db"
+	"github.com/nczz/phishguard/internal/handler"
+	"github.com/nczz/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/service"
 )
 
 func main() {

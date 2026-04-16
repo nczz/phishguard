@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/phishguard/phishguard/internal/repo"
-	"github.com/phishguard/phishguard/internal/service"
+	"github.com/nczz/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/service"
 	"gorm.io/gorm"
 )
 

@@ -5,11 +5,11 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
-    listen 80;
+    listen 8080;
     root /usr/share/nginx/html;
     location / {
         try_files $uri $uri/ /index.html;

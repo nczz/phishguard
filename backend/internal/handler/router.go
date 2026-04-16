@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/middleware"
 )
 
 func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
@@ -66,6 +66,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		api.PUT("/recipients/:id", h.UpdateRecipient)
 		api.DELETE("/recipients/:id", h.DeleteRecipient)
 		api.POST("/recipients/batch-delete", h.BatchDeleteRecipients)
+		api.POST("/recipients/batch-active", h.BatchSetActiveRecipients)
 		api.GET("/recipients/validate", h.ValidateRecipients)
 
 		api.GET("/smtp-profiles", h.ListSMTPProfiles)

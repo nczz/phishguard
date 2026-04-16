@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Tag, Button, Modal, Form, Input, InputNumber, Radio, Checkbox, Space, Popconfirm, message, Progress, Alert, Row, Col, Typography } from 'antd';
+import { Card, Table, Tag, Button, Modal, Form, Input, InputNumber, Radio, Checkbox, Space, Popconfirm, message, Progress, Alert, Row, Col, Typography, Select } from 'antd';
 import { PlusOutlined, SafetyCertificateOutlined, CheckCircleOutlined, WarningOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import FieldHelp, { tips } from '../../components/FieldHelp';
 import { api } from '../../api/client';
@@ -22,14 +22,13 @@ export default function SMTPSettings() {
   interface CompResult { domain: string; score: number; checks: CompCheck[]; }
   const [compResult, setCompResult] = useState<CompResult | null>(null);
   const [compLoading, setCompLoading] = useState(false);
-  const [compEmail, setCompEmail] = useState('');
-  const [compHost, setCompHost] = useState('');
+  const [compProfileId, setCompProfileId] = useState<number | null>(null);
 
   const runCompliance = async () => {
-    if (!compEmail) { message.error('請輸入寄件地址'); return; }
+    if (!compProfileId) { message.error('請選擇 SMTP 設定'); return; }
     setCompLoading(true);
     try {
-      const res = await api.post<CompResult>('/smtp-profiles/check-compliance', { from_address: compEmail, smtp_host: compHost });
+      const res = await api.post<CompResult>('/smtp-profiles/check-compliance', { smtp_profile_id: compProfileId });
       setCompResult(res);
     } catch { message.error('檢測失敗'); }
     setCompLoading(false);
@@ -159,8 +158,9 @@ export default function SMTPSettings() {
       <Card title={<><SafetyCertificateOutlined /> 發信合規檢測</>} style={{ marginTop: 24 }}>
         <Typography.Paragraph type="secondary">檢測寄件域名的 SPF、DKIM、DMARC 設定，確保信件不會進入垃圾郵件匣。</Typography.Paragraph>
         <Space>
-          <Input placeholder="寄件地址 (如 noreply@company.com)" value={compEmail} onChange={e => setCompEmail(e.target.value)} style={{ width: 280 }} />
-          <Input placeholder="SMTP 主機（選填）" value={compHost} onChange={e => setCompHost(e.target.value)} style={{ width: 200 }} />
+          <Select placeholder="選擇 SMTP 設定" value={compProfileId} onChange={setCompProfileId} style={{ width: 320 }}>
+            {data.map(p => <Select.Option key={p.id} value={p.id}>{p.name}（{p.from_address}）</Select.Option>)}
+          </Select>
           <Button type="primary" icon={<SafetyCertificateOutlined />} loading={compLoading} onClick={runCompliance}>開始檢測</Button>
         </Space>
 

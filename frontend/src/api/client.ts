@@ -65,6 +65,7 @@ export interface Recipient {
   department: string;
   gender: string;
   position: string;
+  is_active: boolean;
 }
 
 export interface RecipientGroup {

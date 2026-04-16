@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
 )
 
 func (h *Handler) ListPages(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	pages, err := h.PageRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, pages)
@@ -40,7 +40,7 @@ func (h *Handler) CreatePage(c *gin.Context) {
 		CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	}
 	if err := h.PageRepo.Create(&p); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, p)
@@ -60,7 +60,7 @@ func (h *Handler) UpdatePage(c *gin.Context) {
 	}
 	p.ID = id
 	if err := h.PageRepo.Update(tid, &p); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, p)
@@ -74,7 +74,7 @@ func (h *Handler) DeletePage(c *gin.Context) {
 		return
 	}
 	if err := h.PageRepo.Delete(tid, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})

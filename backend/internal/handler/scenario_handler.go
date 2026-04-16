@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
 )
 
 func (h *Handler) ListScenarios(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	scenarios, err := h.ScenarioRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, scenarios)
@@ -44,7 +44,7 @@ func (h *Handler) CreateScenario(c *gin.Context) {
 	if s.Language == "" { s.Language = "zh-TW" }
 	if s.Difficulty == 0 { s.Difficulty = 2 }
 	if err := h.ScenarioRepo.Create(&s); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, s)
@@ -65,7 +65,7 @@ func (h *Handler) UpdateScenario(c *gin.Context) {
 	s.ID = id
 	s.TenantID = &tid
 	if err := h.ScenarioRepo.Update(tid, &s); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, s)
@@ -79,7 +79,7 @@ func (h *Handler) DeleteScenario(c *gin.Context) {
 		return
 	}
 	if err := h.ScenarioRepo.Delete(tid, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})

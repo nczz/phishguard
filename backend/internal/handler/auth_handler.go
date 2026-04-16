@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/middleware"
 )
 
 func (h *Handler) Login(c *gin.Context) {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/model"
 )
 
 func (h *Handler) CreateTenant(c *gin.Context) {
@@ -22,7 +22,7 @@ func (h *Handler) CreateTenant(c *gin.Context) {
 	}
 	tenant, err := h.TenantService.CreateWithAdmin(req.Name, req.Slug, req.Plan, req.AdminEmail, req.AdminPassword)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, tenant)
@@ -31,7 +31,7 @@ func (h *Handler) CreateTenant(c *gin.Context) {
 func (h *Handler) ListTenants(c *gin.Context) {
 	tenants, err := h.TenantRepo.FindAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, tenants)
@@ -85,7 +85,7 @@ func (h *Handler) UpdateTenant(c *gin.Context) {
 		tenant.MaxRecipients = *req.MaxRecipients
 	}
 	if err := h.TenantRepo.Update(tenant); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, tenant)
@@ -94,7 +94,7 @@ func (h *Handler) UpdateTenant(c *gin.Context) {
 func (h *Handler) AdminDashboard(c *gin.Context) {
 	stats, err := h.TenantService.GetDashboardStats()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, stats)
@@ -108,7 +108,7 @@ func (h *Handler) CreatePlatformScenario(c *gin.Context) {
 	}
 	scenario.TenantID = nil
 	if err := h.ScenarioRepo.Create(&scenario); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, scenario)

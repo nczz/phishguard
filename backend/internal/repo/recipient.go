@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/model"
 	"gorm.io/gorm"
 )
 
@@ -33,7 +33,7 @@ func (r *RecipientRepo) BulkCreateRecipients(recipients []model.Recipient) error
 
 func (r *RecipientRepo) FindByGroupIDs(tenantID int64, groupIDs []int64) ([]model.Recipient, error) {
 	var recipients []model.Recipient
-	err := r.DB.Where("tenant_id = ? AND group_id IN ?", tenantID, groupIDs).Find(&recipients).Error
+	err := r.DB.Where("tenant_id = ? AND group_id IN ? AND is_active = ?", tenantID, groupIDs, true).Find(&recipients).Error
 	return recipients, err
 }
 
@@ -49,18 +49,19 @@ func (r *RecipientRepo) CountByTenant(tenantID int64) (int64, error) {
 	return count, err
 }
 
-func (r *RecipientRepo) UpsertRecipients(tenantID, groupID int64, recipients []model.Recipient) (created, updated int64, err error) {
+func (r *RecipientRepo) UpsertRecipients(tenantID, groupID int64, recipients []model.Recipient, sync bool) (created, updated, deactivated int64, err error) {
+	importedEmails := make(map[string]bool, len(recipients))
 	for _, rec := range recipients {
+		importedEmails[rec.Email] = true
 		var existing model.Recipient
 		result := r.DB.Where("tenant_id = ? AND email = ?", tenantID, rec.Email).First(&existing)
 		if result.Error != nil {
-			// Not found — create
+			rec.IsActive = true
 			if err = r.DB.Create(&rec).Error; err != nil {
 				return
 			}
 			created++
 		} else {
-			// Exists — update fields
 			err = r.DB.Model(&existing).Updates(map[string]interface{}{
 				"group_id":   groupID,
 				"first_name": rec.FirstName,
@@ -68,6 +69,7 @@ func (r *RecipientRepo) UpsertRecipients(tenantID, groupID int64, recipients []m
 				"department": rec.Department,
 				"gender":     rec.Gender,
 				"position":   rec.Position,
+				"is_active":  true,
 			}).Error
 			if err != nil {
 				return
@@ -75,7 +77,26 @@ func (r *RecipientRepo) UpsertRecipients(tenantID, groupID int64, recipients []m
 			updated++
 		}
 	}
+
+	if sync {
+		res := r.DB.Model(&model.Recipient{}).
+			Where("tenant_id = ? AND group_id = ? AND is_active = ? AND email NOT IN ?", tenantID, groupID, true, mapKeys(importedEmails)).
+			Update("is_active", false)
+		if res.Error != nil {
+			err = res.Error
+			return
+		}
+		deactivated = res.RowsAffected
+	}
 	return
+}
+
+func mapKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func (r *RecipientRepo) UpdateRecipient(tenantID, id int64, email, firstName, lastName, department, gender, position string) error {
@@ -91,4 +112,8 @@ func (r *RecipientRepo) DeleteRecipient(tenantID, id int64) error {
 
 func (r *RecipientRepo) BatchDelete(tenantID int64, ids []int64) error {
 	return r.DB.Where("tenant_id = ? AND id IN ?", tenantID, ids).Delete(&model.Recipient{}).Error
+}
+
+func (r *RecipientRepo) BatchSetActive(tenantID int64, ids []int64, active bool) error {
+	return r.DB.Model(&model.Recipient{}).Where("tenant_id = ? AND id IN ?", tenantID, ids).Update("is_active", active).Error
 }

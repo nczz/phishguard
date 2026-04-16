@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/model"
 	"gorm.io/gorm"
 )
 

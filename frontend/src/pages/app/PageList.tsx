@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Table, Button, Drawer, Form, Input, Switch, message, Tag, Popconfirm, Space, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
 import FieldHelp, { tips } from '../../components/FieldHelp';
 import type { LandingPage } from '../../api/client';
@@ -71,7 +72,7 @@ export default function PageList() {
       </Drawer>
 
       <Drawer title="頁面預覽" open={previewOpen} onClose={() => setPreviewOpen(false)}>
-        <div dangerouslySetInnerHTML={{ __html: previewHtml }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, minHeight: 400 }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }} style={{ border: '1px solid #d9d9d9', borderRadius: 8, minHeight: 400 }} />
       </Drawer>
     </div>
   );

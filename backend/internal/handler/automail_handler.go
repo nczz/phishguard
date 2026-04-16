@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/mailer"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/service"
+	"github.com/nczz/phishguard/internal/mailer"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/service"
 )
 
 func (h *Handler) SendCampaignReportEmail(c *gin.Context) {
@@ -45,12 +45,12 @@ func (h *Handler) SendCampaignReportEmail(c *gin.Context) {
 	}
 	m, err := mailer.NewMailer(profile.MailerType, config)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 
 	if err := service.SendCampaignReport(h.DB, h.ResultRepo, campaign, m, profile.FromAddress); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 

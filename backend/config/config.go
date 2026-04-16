@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -30,15 +31,15 @@ func Load() *Config {
 		DBHost:         env("DB_HOST", "127.0.0.1"),
 		DBPort:         env("DB_PORT", "3306"),
 		DBUser:         env("DB_USER", "phishguard"),
-		DBPass:         env("DB_PASS", "phishguard_dev"),
+		DBPass:         requireEnv("DB_PASS"),
 		DBName:         env("DB_NAME", "phishguard"),
 		RedisAddr:      env("REDIS_ADDR", "127.0.0.1:6379"),
-		JWTSecret:      env("JWT_SECRET", "dev-secret-change-me"),
+		JWTSecret:      requireEnv("JWT_SECRET"),
 		APIAddr:        env("API_ADDR", ":8080"),
 		TrackerAddr:    env("TRACKER_ADDR", ":8090"),
 		TrackerBaseURL: env("TRACKER_BASE_URL", "http://localhost:8090"),
 		AdminEmail:     env("ADMIN_EMAIL", "admin@phishguard.local"),
-		AdminPassword:  env("ADMIN_PASSWORD", "changeme123"),
+		AdminPassword:  requireEnv("ADMIN_PASSWORD"),
 	}
 	c.DBDSN = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=UTC",
 		c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
@@ -50,4 +51,12 @@ func env(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func requireEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		log.Fatalf("FATAL: required environment variable %s is not set", key)
+	}
+	return v
 }

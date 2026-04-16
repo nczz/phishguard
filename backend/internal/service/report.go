@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/phishguard/phishguard/internal/repo"
+	"github.com/nczz/phishguard/internal/repo"
 )
 
 type OverviewStats struct {

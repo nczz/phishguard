@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,7 +26,7 @@ type TenantStats struct {
 func (h *Handler) AdminDashboardFull(c *gin.Context) {
 	tenants, err := h.TenantRepo.FindAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (h *Handler) AdminListUsers(c *gin.Context) {
 	tid, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	users, err := h.UserRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, users)
@@ -132,16 +132,26 @@ func (h *Handler) AdminCreateUser(c *gin.Context) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	u := &model.User{TenantID: &tid, Email: req.Email, Name: req.Name, PasswordHash: string(hash), Role: req.Role, IsActive: true}
 	if err := h.UserRepo.Create(u); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, u)
 }
 
 func (h *Handler) AdminDeleteUser(c *gin.Context) {
+	tid, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	uid, _ := strconv.ParseInt(c.Param("uid"), 10, 64)
+	user, err := h.UserRepo.FindByID(uid)
+	if err != nil {
+		notFound(c, "user not found")
+		return
+	}
+	if user.TenantID == nil || *user.TenantID != tid {
+		forbidden(c, "user does not belong to this tenant")
+		return
+	}
 	if err := h.UserRepo.Delete(uid); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
@@ -178,7 +188,7 @@ func (h *Handler) AdminUpdateUser(c *gin.Context) {
 		user.PasswordHash = string(hash)
 	}
 	if err := h.UserRepo.Update(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, user)
@@ -191,7 +201,7 @@ func (h *Handler) AdminAuditLogs(c *gin.Context) {
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	logs, total, err := h.AuditRepo.FindAll(limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"logs": logs, "total": total})
@@ -205,7 +215,7 @@ func (h *Handler) AdminImpersonate(c *gin.Context) {
 
 	token, err := middleware.GenerateToken(h.JWTSecret, admin.UserID, &tid, "tenant_admin", admin.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"token": token, "tenant_id": tid})

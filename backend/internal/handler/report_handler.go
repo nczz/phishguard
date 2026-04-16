@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/middleware"
 )
 
 func (h *Handler) GetCampaignReport(c *gin.Context) {
@@ -17,12 +17,12 @@ func (h *Handler) GetCampaignReport(c *gin.Context) {
 	}
 	funnel, err := h.ReportService.GetCampaignFunnel(tid, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	depts, err := h.ReportService.GetDepartmentStats(tid, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"funnel": funnel, "departments": depts})
@@ -36,7 +36,7 @@ func (h *Handler) GetOverviewReport(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	campaigns, err := h.CampaignRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	ids := make([]int64, len(campaigns))
@@ -45,7 +45,7 @@ func (h *Handler) GetOverviewReport(c *gin.Context) {
 	}
 	overview, err := h.ReportService.GetOverview(tid, ids)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, overview)
@@ -65,7 +65,7 @@ func (h *Handler) GetDepartmentReport(c *gin.Context) {
 	}
 	stats, err := h.ReportService.GetDepartmentStats(tid, cid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, stats)

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -24,7 +25,10 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
 			return
 		}
-		token, err := jwt.ParseWithClaims(h[7:], &Claims{}, func(*jwt.Token) (any, error) {
+		token, err := jwt.ParseWithClaims(h[7:], &Claims{}, func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
 			return []byte(jwtSecret), nil
 		})
 		if err != nil || !token.Valid {

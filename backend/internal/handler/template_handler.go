@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
 )
 
 func (h *Handler) ListTemplates(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	templates, err := h.TemplateRepo.FindAllByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, templates)
@@ -50,7 +50,7 @@ func (h *Handler) CreateTemplate(c *gin.Context) {
 		t.Language = "zh-TW"
 	}
 	if err := h.TemplateRepo.Create(&t); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, t)
@@ -70,7 +70,7 @@ func (h *Handler) UpdateTemplate(c *gin.Context) {
 	}
 	t.ID = id
 	if err := h.TemplateRepo.Update(tid, &t); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, t)
@@ -84,7 +84,7 @@ func (h *Handler) DeleteTemplate(c *gin.Context) {
 		return
 	}
 	if err := h.TemplateRepo.Delete(tid, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})

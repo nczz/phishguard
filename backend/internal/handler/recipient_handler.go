@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
-	"github.com/phishguard/phishguard/internal/model"
-	"github.com/phishguard/phishguard/internal/service"
+	"github.com/nczz/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/model"
+	"github.com/nczz/phishguard/internal/service"
 )
 
 func (h *Handler) ListRecipientGroups(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	groups, err := h.RecipientRepo.FindGroupsByTenant(tid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, groups)
@@ -33,7 +33,7 @@ func (h *Handler) CreateRecipientGroup(c *gin.Context) {
 	}
 	g := model.RecipientGroup{TenantID: tid, Name: req.Name}
 	if err := h.RecipientRepo.CreateGroup(&g); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, g)
@@ -57,6 +57,7 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 
 	var req struct {
 		GroupID    int64 `json:"group_id" binding:"required"`
+		Sync       bool  `json:"sync"`
 		Recipients []struct {
 			Email      string `json:"email"`
 			FirstName  string `json:"first_name"`
@@ -93,12 +94,12 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 			Position:   r.Position,
 		})
 	}
-	created, updated, err := h.RecipientRepo.UpsertRecipients(tid, req.GroupID, recipients)
+	created, updated, deactivated, err := h.RecipientRepo.UpsertRecipients(tid, req.GroupID, recipients, req.Sync)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"created": created, "updated": updated, "total": created + updated})
+	c.JSON(http.StatusCreated, gin.H{"created": created, "updated": updated, "deactivated": deactivated, "total": created + updated})
 }
 
 func (h *Handler) UpdateRecipient(c *gin.Context) {
@@ -121,7 +122,7 @@ func (h *Handler) UpdateRecipient(c *gin.Context) {
 		return
 	}
 	if err := h.RecipientRepo.UpdateRecipient(tid, id, req.Email, req.FirstName, req.LastName, req.Department, req.Gender, req.Position); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "updated"})
@@ -135,7 +136,7 @@ func (h *Handler) DeleteRecipient(c *gin.Context) {
 		return
 	}
 	if err := h.RecipientRepo.DeleteRecipient(tid, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
@@ -151,10 +152,27 @@ func (h *Handler) BatchDeleteRecipients(c *gin.Context) {
 		return
 	}
 	if err := h.RecipientRepo.BatchDelete(tid, req.IDs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"deleted": len(req.IDs)})
+}
+
+func (h *Handler) BatchSetActiveRecipients(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	var req struct {
+		IDs    []int64 `json:"ids" binding:"required"`
+		Active bool    `json:"active"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.RecipientRepo.BatchSetActive(tid, req.IDs, req.Active); err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"updated": len(req.IDs), "active": req.Active})
 }
 
 func (h *Handler) ValidateRecipients(c *gin.Context) {

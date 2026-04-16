@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phishguard/phishguard/internal/middleware"
+	"github.com/nczz/phishguard/internal/middleware"
 )
 
 type ComplianceCheck struct {
@@ -24,19 +24,24 @@ type ComplianceResult struct {
 }
 
 func (h *Handler) CheckMailCompliance(c *gin.Context) {
-	_ = middleware.GetContextTenantID(c)
+	tenantID := middleware.GetContextTenantID(c)
 	var req struct {
-		FromAddress string `json:"from_address" binding:"required"`
-		SmtpHost    string `json:"smtp_host"`
+		SMTPProfileID int64 `json:"smtp_profile_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	parts := strings.SplitN(req.FromAddress, "@", 2)
+	profile, err := h.SMTPRepo.FindByID(*tenantID, req.SMTPProfileID)
+	if err != nil {
+		notFound(c, "SMTP profile not found")
+		return
+	}
+
+	parts := strings.SplitN(profile.FromAddress, "@", 2)
 	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "SMTP profile from_address is invalid"})
 		return
 	}
 	domain := parts[1]
@@ -53,9 +58,9 @@ func (h *Handler) CheckMailCompliance(c *gin.Context) {
 	// 4. MX record
 	checks = append(checks, checkMX(domain, &score))
 
-	// 5. Reverse DNS (if SMTP host provided)
-	if req.SmtpHost != "" {
-		checks = append(checks, checkReverseDNS(req.SmtpHost, &score))
+	// 5. Reverse DNS (from SMTP host)
+	if profile.Host != "" {
+		checks = append(checks, checkReverseDNS(profile.Host, &score))
 	}
 
 	// 6. Rate limiting advice

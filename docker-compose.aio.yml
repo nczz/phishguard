@@ -8,16 +8,16 @@ services:
     image: mysql:8.0
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-phishguard_root}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:?DB_ROOT_PASS is required}
       MYSQL_DATABASE: phishguard
       MYSQL_USER: phishguard
-      MYSQL_PASSWORD: ${DB_PASS:-phishguard_prod}
+      MYSQL_PASSWORD: ${DB_PASS:?DB_PASS is required}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/migration:/docker-entrypoint-initdb.d
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
-      test: mysqladmin ping -h localhost -u root -p${DB_ROOT_PASS:-phishguard_root}
+      test: mysqladmin ping -h localhost -u root -p${DB_ROOT_PASS}
       interval: 10s
       retries: 5
 
@@ -48,15 +48,15 @@ services:
       DB_HOST: mysql
       DB_PORT: "3306"
       DB_USER: phishguard
-      DB_PASS: ${DB_PASS:-phishguard_prod}
+      DB_PASS: ${DB_PASS:?DB_PASS is required}
       DB_NAME: phishguard
       REDIS_ADDR: redis:6379
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       API_ADDR: ":8080"
       TRACKER_ADDR: ":8090"
-      TRACKER_BASE_URL: ${TRACKER_BASE_URL:-https://t.yourdomain.com}
+      TRACKER_BASE_URL: ${TRACKER_BASE_URL:?TRACKER_BASE_URL is required}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@phishguard.local}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
 
 volumes:
   mysql_data:

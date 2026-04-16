@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input, Tooltip, Alert } from 'antd';
-import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input, Tooltip, Alert, Checkbox } from 'antd';
+import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined, QuestionCircleOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
 import { tips } from '../../components/FieldHelp';
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
@@ -43,6 +43,7 @@ export default function RecipientGroups() {
   const [selectedIds, setSelectedIds] = useState<React.Key[]>([]);
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [filteredEmails, setFilteredEmails] = useState<{email: string; name: string; reason: string}[]>([]);
+  const [syncMode, setSyncMode] = useState(false);
 
   const load = () => {
     api.get<RecipientGroup[]>('/recipient-groups').then(gs => {
@@ -103,8 +104,10 @@ export default function RecipientGroups() {
       if (!group) {
         group = await api.post<RecipientGroup>('/recipient-groups', { name: '全公司' });
       }
-      const res = await api.post<{ created: number; updated: number; total: number }>('/recipient-groups/import', { group_id: group.id, recipients: parsed });
-      message.success(`匯入完成：新增 ${res.created} 人，更新 ${res.updated} 人`);
+      const res = await api.post<{ created: number; updated: number; deactivated: number; total: number }>('/recipient-groups/import', { group_id: group.id, recipients: parsed, sync: syncMode });
+      const parts = [`新增 ${res.created} 人`, `更新 ${res.updated} 人`];
+      if (res.deactivated > 0) parts.push(`停用 ${res.deactivated} 人`);
+      message.success(`匯入完成：${parts.join('，')}`);
       setImportOpen(false);
       setParsed([]);
       load();
@@ -199,6 +202,12 @@ export default function RecipientGroups() {
             <Card size="small"><Statistic title="總人數" value={allRecipients.length} prefix={<TeamOutlined />} /></Card>
           </Col>
           <Col xs={12} sm={6}>
+            <Card size="small"><Statistic title="啟用中" value={allRecipients.filter(r => r.is_active !== false).length} valueStyle={{ color: '#52c41a' }} /></Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small"><Statistic title="已停用" value={allRecipients.filter(r => r.is_active === false).length} valueStyle={{ color: '#999' }} /></Card>
+          </Col>
+          <Col xs={12} sm={6}>
             <Card size="small"><Statistic title="部門數" value={deptStats.length} /></Card>
           </Col>
           {deptStats.slice(0, 4).map(([dept, count]) => (
@@ -218,11 +227,13 @@ export default function RecipientGroups() {
           <span>
             員工名單 {deptFilter && <Tag closable onClose={() => setDeptFilter(undefined)}>{deptFilter}</Tag>}
             {selectedIds.length > 0 && (
-              <Popconfirm title={`確定刪除 ${selectedIds.length} 人？`} onConfirm={batchDelete}>
-                <Button danger size="small" icon={<DeleteOutlined />} loading={batchDeleting} style={{ marginLeft: 8 }}>
-                  刪除已選 ({selectedIds.length})
-                </Button>
-              </Popconfirm>
+              <Space size="small" style={{ marginLeft: 8 }}>
+                <Button size="small" icon={<CheckCircleOutlined />} onClick={async () => { await api.post('/recipients/batch-active', { ids: selectedIds, active: true }); message.success('已啟用'); setSelectedIds([]); load(); }}>啟用 ({selectedIds.length})</Button>
+                <Button size="small" icon={<StopOutlined />} onClick={async () => { await api.post('/recipients/batch-active', { ids: selectedIds, active: false }); message.success('已停用'); setSelectedIds([]); load(); }}>停用 ({selectedIds.length})</Button>
+                <Popconfirm title={`確定刪除 ${selectedIds.length} 人？`} onConfirm={batchDelete}>
+                  <Button danger size="small" icon={<DeleteOutlined />} loading={batchDeleting}>刪除 ({selectedIds.length})</Button>
+                </Popconfirm>
+              </Space>
             )}
           </span>
           {departments.length > 0 && (
@@ -252,6 +263,8 @@ export default function RecipientGroups() {
               { title: '性別', dataIndex: 'gender', width: 80, render: (g: string) => g || '不指定',
                 filters: [{ text: '男', value: '男' }, { text: '女', value: '女' }, { text: '不指定', value: '不指定' }], onFilter: (v: unknown, r: Recipient) => (r.gender || '不指定') === v },
               { title: '職稱', dataIndex: 'position', width: 120 },
+              { title: '狀態', dataIndex: 'is_active', width: 80, render: (v: boolean) => v === false ? <Tag color="default">停用</Tag> : <Tag color="green">啟用</Tag>,
+                filters: [{ text: '啟用', value: true }, { text: '停用', value: false }], onFilter: (v: unknown, r: Recipient) => (r.is_active !== false) === v },
               { title: '操作', width: 100, render: (_: unknown, r: Recipient) => (
                 <Space size="small">
                   <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
@@ -272,6 +285,11 @@ export default function RecipientGroups() {
             {previewDepts.map(([dept, count]) => (
               <Tag key={dept} color="blue" style={{ marginBottom: 4 }}>{dept}: {count} 人</Tag>
             ))}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Checkbox checked={syncMode} onChange={e => setSyncMode(e.target.checked)}>
+              同步模式：自動停用不在此檔案中的現有收件人（適用於以 HR 名單為準的場景）
+            </Checkbox>
           </div>
         </div>
         <Table dataSource={parsed} rowKey="email" size="small" pagination={{ pageSize: 10 }}
