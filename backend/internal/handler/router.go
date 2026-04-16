@@ -5,7 +5,7 @@ import (
 	"github.com/nczz/phishguard/internal/middleware"
 )
 
-func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
+func SetupRouter(h *Handler, jwtSecret string, auditLogger middleware.AuditLogger) *gin.Engine {
 	r := gin.Default()
 
 	auth := r.Group("/api/auth")
@@ -18,6 +18,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		middleware.AuthMiddleware(jwtSecret),
 		middleware.RoleRequired("platform_admin"),
 		middleware.TenantMiddleware(),
+		middleware.AuditMiddleware(auditLogger),
 	)
 	{
 		admin.POST("/tenants", h.CreateTenant)
@@ -43,6 +44,7 @@ func SetupRouter(h *Handler, jwtSecret string) *gin.Engine {
 		middleware.AuthMiddleware(jwtSecret),
 		middleware.TenantMiddleware(),
 		middleware.RequireTenant(),
+		middleware.AuditMiddleware(auditLogger),
 	)
 	{
 		api.GET("/scenarios", h.ListScenarios)

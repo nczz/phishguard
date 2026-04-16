@@ -59,7 +59,8 @@ func main() {
 		AuditRepo:       auditRepo,
 	}
 
-	r := handler.SetupRouter(h, cfg.JWTSecret)
+	auditLogger := &repo.DBAuditLogger{Repo: auditRepo}
+	r := handler.SetupRouter(h, cfg.JWTSecret, auditLogger)
 	log.Printf("API server starting on %s", cfg.APIAddr)
 	if err := r.Run(cfg.APIAddr); err != nil {
 		log.Fatalf("failed to start API server: %v", err)
