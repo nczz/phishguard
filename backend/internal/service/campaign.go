@@ -29,7 +29,8 @@ type CreateCampaignRequest struct {
 	ScheduleStart    string `json:"schedule_start"`      // RFC3339, empty = now
 	ScheduleEnd      string `json:"schedule_end"`        // RFC3339, required for scheduled
 	WorkingHoursOnly bool   `json:"working_hours_only"`  // 09:00-17:00 only
-	SkipWeekends     bool   `json:"skip_weekends"`       // skip Sat/Sun
+	SkipWeekends     bool   `json:"skip_weekends"`
+	Timezone         string `json:"timezone"` // e.g. "Asia/Taipei"
 }
 
 type CampaignService struct {
@@ -81,9 +82,13 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 		ScheduleStart:    schedStart,
 		WorkingHoursOnly: req.WorkingHoursOnly,
 		SkipWeekends:     req.SkipWeekends,
+		Timezone:         req.Timezone,
 		SelectionMode:    req.SelectionMode,
 		SamplePercent:    req.SamplePercent,
 		Departments:      req.Departments,
+	}
+	if c.Timezone == "" {
+		c.Timezone = "UTC"
 	}
 	if err := s.CampaignRepo.Create(c); err != nil {
 		return nil, fmt.Errorf("create campaign: %w", err)
@@ -189,7 +194,7 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 
 	if schedEnd.After(schedStart) {
 		// Scheduled mode: count valid seconds in window
-		validSeconds := countValidSeconds(schedStart, schedEnd, c.WorkingHoursOnly, c.SkipWeekends)
+		validSeconds := countValidSeconds(schedStart, schedEnd, c.WorkingHoursOnly, c.SkipWeekends, c.Timezone)
 		if validSeconds < minSecondsNeeded {
 			// Auto-extend: calculate how much time we actually need and extend schedEnd
 			needed := time.Duration(minSecondsNeeded) * time.Second
@@ -200,7 +205,7 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		}
 	}
 
-	slots := generateTimeSlots(schedStart, schedEnd, c.WorkingHoursOnly, c.SkipWeekends, len(recipients))
+	slots := generateTimeSlots(schedStart, schedEnd, c.WorkingHoursOnly, c.SkipWeekends, c.Timezone, len(recipients))
 
 	results := make([]model.Result, len(recipients))
 	for i, r := range recipients {
@@ -225,12 +230,17 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 
 // generateTimeSlots distributes N send times across a window,
 // respecting working hours and weekend restrictions.
-func generateTimeSlots(start, end time.Time, workingHoursOnly, skipWeekends bool, count int) []time.Time {
+func generateTimeSlots(start, end time.Time, workingHoursOnly, skipWeekends bool, tz string, count int) []time.Time {
 	if count == 0 {
 		return nil
 	}
 
-	// If start == end (immediate), return all at start
+	// Load user timezone for working hours / weekend checks
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.UTC
+	}
+
 	if !end.After(start) {
 		slots := make([]time.Time, count)
 		for i := range slots {
@@ -239,18 +249,16 @@ func generateTimeSlots(start, end time.Time, workingHoursOnly, skipWeekends bool
 		return slots
 	}
 
-	// Collect all valid minute-slots in the window
 	validMinutes := []time.Time{}
 	cursor := start.Truncate(time.Minute)
 	for !cursor.After(end) {
-		if isValidSendTime(cursor, workingHoursOnly, skipWeekends) {
+		if isValidSendTime(cursor, workingHoursOnly, skipWeekends, loc) {
 			validMinutes = append(validMinutes, cursor)
 		}
 		cursor = cursor.Add(time.Minute)
 	}
 
 	if len(validMinutes) == 0 {
-		// No valid slots found — fall back to immediate
 		slots := make([]time.Time, count)
 		for i := range slots {
 			slots[i] = start
@@ -258,29 +266,29 @@ func generateTimeSlots(start, end time.Time, workingHoursOnly, skipWeekends bool
 		return slots
 	}
 
-	// Distribute recipients evenly across valid minutes with jitter
 	slots := make([]time.Time, count)
 	for i := 0; i < count; i++ {
 		idx := i * len(validMinutes) / count
 		if idx >= len(validMinutes) {
 			idx = len(validMinutes) - 1
 		}
-		// Add random jitter within the minute (0-59 seconds)
 		jitter := time.Duration(rand.Intn(60)) * time.Second
 		slots[i] = validMinutes[idx].Add(jitter)
 	}
 	return slots
 }
 
-func isValidSendTime(t time.Time, workingHoursOnly, skipWeekends bool) bool {
+func isValidSendTime(t time.Time, workingHoursOnly, skipWeekends bool, loc *time.Location) bool {
+	// Convert UTC time to user's local timezone for checking
+	local := t.In(loc)
 	if skipWeekends {
-		wd := t.Weekday()
+		wd := local.Weekday()
 		if wd == time.Saturday || wd == time.Sunday {
 			return false
 		}
 	}
 	if workingHoursOnly {
-		hour := t.Hour()
+		hour := local.Hour()
 		if hour < 9 || hour >= 17 {
 			return false
 		}
@@ -309,13 +317,16 @@ func estimateMinSendTime(recipientCount int, mailerType string) int {
 }
 
 // countValidSeconds counts how many seconds in a time window are valid for sending.
-func countValidSeconds(start, end time.Time, workingHoursOnly, skipWeekends bool) int {
+func countValidSeconds(start, end time.Time, workingHoursOnly, skipWeekends bool, tz string) int {
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.UTC
+	}
 	count := 0
 	cursor := start.Truncate(time.Second)
-	// Sample every minute to avoid counting millions of seconds
 	for !cursor.After(end) {
-		if isValidSendTime(cursor, workingHoursOnly, skipWeekends) {
-			count += 60 // count the whole minute
+		if isValidSendTime(cursor, workingHoursOnly, skipWeekends, loc) {
+			count += 60
 		}
 		cursor = cursor.Add(time.Minute)
 	}

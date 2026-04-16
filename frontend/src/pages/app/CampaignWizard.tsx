@@ -124,6 +124,7 @@ export default function CampaignWizard() {
         schedule_end: sendMode === 'scheduled' ? scheduleEnd : undefined,
         working_hours_only: workingHoursOnly,
         skip_weekends: skipWeekends,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
       await api.post('/campaigns/' + campaign.id + '/launch');
       message.success('測試已發送！');

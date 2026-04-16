@@ -154,6 +154,7 @@ type Campaign struct {
 	ScheduleStart    *time.Time      `json:"schedule_start"`
 	WorkingHoursOnly bool            `gorm:"not null;default:false" json:"working_hours_only"`
 	SkipWeekends     bool            `gorm:"not null;default:false" json:"skip_weekends"`
+	Timezone         string          `gorm:"size:50;not null;default:UTC" json:"timezone"`
 	CompletedAt      *time.Time      `json:"completed_at"`
 	CreatedBy     *int64          `json:"created_by"`
 	Results       []Result        `gorm:"foreignKey:CampaignID" json:"results,omitempty"`
