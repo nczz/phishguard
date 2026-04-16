@@ -25,6 +25,7 @@ RUN npm run build
 FROM alpine:3.19
 
 RUN apk add --no-cache ca-certificates tzdata nginx supervisor
+ENV TZ=UTC
 
 # Go binaries
 COPY --from=go-builder /bin/phishguard-api /usr/local/bin/

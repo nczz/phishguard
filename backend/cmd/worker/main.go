@@ -93,7 +93,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 
 	// Find scheduled results ready to send
 	var results []model.Result
-	now := time.Now()
+	now := time.Now().UTC()
 	database.Where("campaign_id = ? AND status = ? AND (send_date IS NULL OR send_date <= ?)",
 		campaign.ID, "scheduled", now).
 		Preload("Recipient").
@@ -106,7 +106,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			Where("campaign_id = ? AND status = ?", campaign.ID, "scheduled").
 			Count(&pending)
 		if pending == 0 {
-			now := time.Now()
+			now := time.Now().UTC()
 			campaign.Status = model.CampaignStatusCompleted
 			campaign.CompletedAt = &now
 			campaignRepo.Update(campaign)
@@ -177,7 +177,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 				Status: model.EventError, ErrorDetail: err.Error(),
 			})
 		} else {
-			sentAt := time.Now()
+			sentAt := time.Now().UTC()
 			database.Model(r).Select("status", "sent_at").Updates(model.Result{
 				Status: model.EventSent, SentAt: &sentAt,
 			})

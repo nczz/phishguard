@@ -12,7 +12,7 @@ import (
 
 func RunScheduledTests(db *gorm.DB, campaignSvc *CampaignService) error {
 	var configs []model.AutoTestConfig
-	if err := db.Where("is_enabled = ? AND next_run_at <= ?", true, time.Now()).Find(&configs).Error; err != nil {
+	if err := db.Where("is_enabled = ? AND next_run_at <= ?", true, time.Now().UTC()).Find(&configs).Error; err != nil {
 		return fmt.Errorf("query auto_test_configs: %w", err)
 	}
 
@@ -69,7 +69,7 @@ func runOneAutoTest(db *gorm.DB, campaignSvc *CampaignService, cfg *model.AutoTe
 	if selMode == "random" { selMode = "sample" }
 
 	campaign, err := campaignSvc.CreateCampaign(cfg.TenantID, &CreateCampaignRequest{
-		Name:          fmt.Sprintf("Auto Test - %s", time.Now().Format("2006-01-02")),
+		Name:          fmt.Sprintf("Auto Test - %s", time.Now().UTC().Format("2006-01-02")),
 		ScenarioID:    &scenarioID,
 		SMTPProfileID: smtp.ID,
 		GroupIDs:      groupIDs,
@@ -86,7 +86,7 @@ func runOneAutoTest(db *gorm.DB, campaignSvc *CampaignService, cfg *model.AutoTe
 	}
 
 	// Calculate next run
-	now := time.Now()
+	now := time.Now().UTC()
 	switch cfg.Frequency {
 	case "monthly":
 		now = now.AddDate(0, 1, 0)

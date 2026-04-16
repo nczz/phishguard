@@ -168,7 +168,7 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 	}
 
 	// Build results with scheduled send dates
-	now := time.Now()
+	now := time.Now().UTC()
 	rand.Shuffle(len(recipients), func(i, j int) { recipients[i], recipients[j] = recipients[j], recipients[i] })
 
 	// Determine schedule window
