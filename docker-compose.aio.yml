@@ -57,6 +57,7 @@ services:
       TRACKER_BASE_URL: ${TRACKER_BASE_URL:?TRACKER_BASE_URL is required}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@phishguard.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      APP_DESCRIPTION: ${APP_DESCRIPTION:-企業釣魚模擬測試平台}
 
 volumes:
   mysql_data:
