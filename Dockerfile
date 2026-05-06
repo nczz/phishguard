@@ -100,7 +100,19 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 SUPERVISOR
 
+# Startup script: generate runtime config then start services
+COPY <<'ENTRYPOINT' /entrypoint.sh
+#!/bin/sh
+cat > /var/www/html/config.js <<EOF
+window.__CONFIG__ = {
+  APP_DESCRIPTION: "${APP_DESCRIPTION:-企業釣魚模擬測試平台}"
+};
+EOF
+exec supervisord -c /etc/supervisord.conf
+ENTRYPOINT
+RUN chmod +x /entrypoint.sh
+
 # Ports: 80 (frontend+API), 8090 (tracker)
 EXPOSE 80 8090
 
-CMD ["supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/entrypoint.sh"]

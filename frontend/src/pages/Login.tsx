@@ -34,7 +34,7 @@ export default function Login() {
         <Space orientation="vertical" align="center" style={{ width: '100%', marginBottom: 24 }}>
           <SafetyOutlined style={{ fontSize: 48, color: '#1677ff' }} />
           <Title level={2} style={{ margin: 0 }}>PhishGuard</Title>
-          <Text type="secondary">企業釣魚模擬測試平台</Text>
+          <Text type="secondary">{window.__CONFIG__?.APP_DESCRIPTION ?? '企業釣魚模擬測試平台'}</Text>
         </Space>
 
         <Form layout="vertical" onFinish={onFinish}>
