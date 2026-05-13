@@ -31,5 +31,10 @@ func (h *Handler) Me(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
+	// When impersonating, override user context to reflect the impersonated tenant
+	if claims.Subject == "impersonation" && claims.TenantID != nil {
+		user.TenantID = claims.TenantID
+		user.Role = claims.Role
+	}
 	c.JSON(http.StatusOK, user)
 }
