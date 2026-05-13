@@ -253,10 +253,10 @@ export default function RecipientGroups() {
           </Empty>
         ) : (
           <Table dataSource={filteredRecipients} rowKey="id" size="small" pagination={{ pageSize: 20 }}
-            scroll={{ x: 800 }}
+            scroll={{ x: 860 }}
             rowSelection={{ selectedRowKeys: selectedIds, onChange: setSelectedIds }}
             columns={[
-              { title: 'Email', dataIndex: 'email', width: 200, ellipsis: true, sorter: (a: Recipient, b: Recipient) => a.email.localeCompare(b.email) },
+              { title: 'Email', dataIndex: 'email', width: 200, ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip>, sorter: (a: Recipient, b: Recipient) => a.email.localeCompare(b.email) },
               { title: '姓', dataIndex: 'last_name', width: 80 },
               { title: '名', dataIndex: 'first_name', width: 80 },
               { title: '部門', dataIndex: 'department', width: 120, render: (d: string) => <Tag>{d || '未分類'}</Tag>,

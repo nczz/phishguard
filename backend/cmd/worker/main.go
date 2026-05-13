@@ -237,7 +237,7 @@ func isTransientError(err error) bool {
 		// SMTP transient codes
 		"421", "450", "451", "452",
 		// Connection issues
-		"connection reset", "timeout", "eof",
+		"connection reset", "timeout", "unexpected eof", "broken pipe",
 		// AWS SES specific
 		"throttlingexception", "throttling", "rate exceeded",
 		"toomanyrequestsexception", "maximum sending rate",

@@ -8,7 +8,7 @@ import { RocketOutlined, EyeOutlined, QuestionCircleOutlined } from '@ant-design
 import dayjs from 'dayjs';
 import { tips } from '../../components/FieldHelp';
 import type { Scenario, RecipientGroup, SMTPProfile, Campaign } from '../../api/client';
-import { api } from '../../api/client';
+import { api, getErrorMessage } from '../../api/client';
 
 const { Title, Text } = Typography;
 
@@ -62,6 +62,7 @@ export default function CampaignWizard() {
   const [skipWeekends, setSkipWeekends] = useState(true);
   const [campaignName, setCampaignName] = useState(defaultCampaignName);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const [recipientSearch, setRecipientSearch] = useState('');
   const [skipCooldown, setSkipCooldown] = useState(false);
 
   useEffect(() => {
@@ -135,8 +136,8 @@ export default function CampaignWizard() {
       });
       message.success('測試已發送！');
       navigate('/app/campaigns/' + campaign.id);
-    } catch {
-      message.error('發送失敗，請稍後再試');
+    } catch (err) {
+      message.error(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -209,6 +210,14 @@ export default function CampaignWizard() {
             </Space>
           </Radio.Group>
 
+          <Checkbox
+            checked={skipCooldown}
+            onChange={e => setSkipCooldown(e.target.checked)}
+            style={{ marginBottom: 16, marginLeft: 24 }}
+          >
+            忽略 30 天冷卻期（強制發送給所有選中對象）
+          </Checkbox>
+
           {selectionMode === 'department' && (
             <Checkbox.Group
               value={departments}
@@ -243,18 +252,29 @@ export default function CampaignWizard() {
 
           {selectionMode === 'individual' && (
             <div style={{ marginBottom: 16 }}>
+              <Input
+                placeholder="搜尋 Email、姓名或部門"
+                allowClear
+                value={recipientSearch}
+                onChange={e => setRecipientSearch(e.target.value)}
+                style={{ marginBottom: 8, maxWidth: 300 }}
+              />
               <Table
                 size="small"
                 rowKey="id"
-                dataSource={allRecipients}
-                scroll={{ x: 500, y: 300 }}
-                pagination={false}
+                dataSource={allRecipients.filter(r => {
+                  if (!recipientSearch) return true;
+                  const q = recipientSearch.toLowerCase();
+                  return r.email.toLowerCase().includes(q) || (r.last_name + r.first_name).toLowerCase().includes(q) || r.department.toLowerCase().includes(q);
+                })}
+                scroll={{ x: 500 }}
+                pagination={{ pageSize: 10, showSizeChanger: true, size: 'small' }}
                 rowSelection={{
                   selectedRowKeys: selectedRecipientIds,
                   onChange: (keys) => setSelectedRecipientIds(keys as string[]),
                 }}
                 columns={[
-                  { title: 'Email', dataIndex: 'email', width: 200, ellipsis: true },
+                  { title: 'Email', dataIndex: 'email', width: 200, ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip> },
                   { title: '姓名', key: 'name', width: 100, render: (_: unknown, r: { last_name: string; first_name: string }) => r.last_name + r.first_name },
                   { title: '部門', dataIndex: 'department', width: 100 },
                 ]}
@@ -262,14 +282,6 @@ export default function CampaignWizard() {
               <Text type="secondary">已選 {selectedRecipientIds.length} 人</Text>
             </div>
           )}
-
-          <Checkbox
-            checked={skipCooldown}
-            onChange={e => setSkipCooldown(e.target.checked)}
-            style={{ marginBottom: 16, display: 'block' }}
-          >
-            忽略 30 天冷卻期（強制發送給所有選中對象）
-          </Checkbox>
 
           <Card size="small" title="發送排程" style={{ marginTop: 16 }}>
             <Radio.Group value={sendMode} onChange={e => setSendMode(e.target.value)} style={{ marginBottom: 12 }}>

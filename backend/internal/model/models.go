@@ -250,7 +250,7 @@ type AuditLog struct {
 	Action     string    `gorm:"size:50;not null" json:"action"`
 	Resource   string    `gorm:"size:50;not null" json:"resource"`
 	ResourceID *int64    `json:"resource_id"`
-	Detail     string    `gorm:"type:text" json:"detail"`
+	Detail     *string   `gorm:"type:json" json:"detail"`
 	IPAddress  string    `gorm:"size:45" json:"ip_address"`
 	UserAgent  string    `gorm:"size:500" json:"user_agent"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`

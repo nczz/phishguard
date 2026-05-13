@@ -56,17 +56,18 @@ func (h *Handler) TenantDashboardStats(c *gin.Context) {
 // --- Campaign recipient detail list ---
 
 type RecipientResult struct {
-	Email       string     `json:"email"`
-	FirstName   string     `json:"first_name"`
-	LastName    string     `json:"last_name"`
-	Department  string     `json:"department"`
-	Status      string     `json:"status"`
-	SentAt      *time.Time `json:"sent_at"`
-	OpenedAt    *time.Time `json:"opened_at"`
-	ClickedAt   *time.Time `json:"clicked_at"`
+	Email        string     `json:"email"`
+	FirstName    string     `json:"first_name"`
+	LastName     string     `json:"last_name"`
+	Department   string     `json:"department"`
+	Status       string     `json:"status"`
+	ErrorDetail  string     `json:"error_detail,omitempty"`
+	SentAt       *time.Time `json:"sent_at"`
+	OpenedAt     *time.Time `json:"opened_at"`
+	ClickedAt    *time.Time `json:"clicked_at"`
 	DownloadedAt *time.Time `json:"downloaded_at"`
-	SubmittedAt *time.Time `json:"submitted_at"`
-	ReportedAt  *time.Time `json:"reported_at"`
+	SubmittedAt  *time.Time `json:"submitted_at"`
+	ReportedAt   *time.Time `json:"reported_at"`
 }
 
 func (h *Handler) CampaignRecipients(c *gin.Context) {
@@ -77,7 +78,7 @@ func (h *Handler) CampaignRecipients(c *gin.Context) {
 
 	list := make([]RecipientResult, 0, len(results))
 	for _, r := range results {
-		rr := RecipientResult{Status: r.Status, SentAt: r.SentAt, OpenedAt: r.OpenedAt, ClickedAt: r.ClickedAt, SubmittedAt: r.SubmittedAt, ReportedAt: r.ReportedAt}
+		rr := RecipientResult{Status: r.Status, ErrorDetail: r.ErrorDetail, SentAt: r.SentAt, OpenedAt: r.OpenedAt, ClickedAt: r.ClickedAt, SubmittedAt: r.SubmittedAt, ReportedAt: r.ReportedAt}
 		if r.Recipient != nil {
 			rr.Email = r.Recipient.Email
 			rr.FirstName = r.Recipient.FirstName

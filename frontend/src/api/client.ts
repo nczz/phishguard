@@ -134,6 +134,7 @@ export interface RecipientResult {
   last_name: string;
   department: string;
   status: string;
+  error_detail?: string;
   sent_at: string | null;
   opened_at: string | null;
   clicked_at: string | null;

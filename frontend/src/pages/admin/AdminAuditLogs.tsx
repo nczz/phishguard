@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Card, Tag, Typography } from 'antd';
+import { Table, Card, Tag, Typography, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { api } from '../../api/client';
@@ -19,12 +19,13 @@ interface AuditLog {
 const PAGE_SIZE = 30;
 
 const columns: ColumnsType<AuditLog> = [
-  { title: '時間', dataIndex: 'created_at', width: 180, render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss') },
-  { title: '租戶', dataIndex: 'tenant_id', width: 80, render: (v: number | null) => v ?? '平台' },
-  { title: '使用者', dataIndex: 'user_email', ellipsis: true },
-  { title: '動作', dataIndex: 'action', width: 120, render: (v: string) => <Tag>{v}</Tag> },
-  { title: '資源', dataIndex: 'resource', width: 120 },
-  { title: 'IP', dataIndex: 'ip_address', width: 140 },
+  { title: '時間', dataIndex: 'created_at', width: 170, render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss') },
+  { title: '租戶', dataIndex: 'tenant_id', width: 60, render: (v: number | null) => v ?? '平台' },
+  { title: '使用者', dataIndex: 'user_email', width: 180, ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip> },
+  { title: '動作', dataIndex: 'action', width: 150, render: (v: string) => <Tag>{v}</Tag> },
+  { title: '資源', dataIndex: 'resource', width: 80 },
+  { title: 'ID', dataIndex: 'resource_id', width: 60, render: (v: number | null) => v ?? '-' },
+  { title: 'IP', dataIndex: 'ip_address', width: 120 },
 ];
 
 export default function AdminAuditLogs() {
@@ -49,8 +50,15 @@ export default function AdminAuditLogs() {
         columns={columns}
         dataSource={logs}
         loading={loading}
+        scroll={{ x: 820 }}
         pagination={{ current: page, pageSize: PAGE_SIZE, total, onChange: setPage, showSizeChanger: false }}
-        expandable={{ expandedRowRender: (r) => <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.detail}</pre> }}
+        expandable={{ expandedRowRender: (r) => {
+          if (!r.detail) return <span style={{ color: '#999' }}>無詳細資料</span>;
+          try {
+            const obj = JSON.parse(r.detail);
+            return <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(obj, null, 2)}</pre>;
+          } catch { return <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.detail}</pre>; }
+        }}}
       />
     </Card>
   );

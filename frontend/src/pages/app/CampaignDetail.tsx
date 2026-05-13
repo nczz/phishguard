@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Table, Typography, message, Popconfirm,
+  Card, Tag, Statistic, Progress, Button, Row, Col, Spin, Breadcrumb, Table, Typography, message, Popconfirm, Tooltip,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ArrowLeftOutlined, DownloadOutlined, FilePdfOutlined, MailOutlined, PauseCircleOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons';
@@ -121,7 +121,8 @@ export default function CampaignDetail() {
 
   const recipientColumns: ColumnsType<RecipientResult> = [
     {
-      title: 'Email', dataIndex: 'email', key: 'email', width: 200, ellipsis: true,
+      title: 'Email', dataIndex: 'email', key: 'email', width: 180, ellipsis: { showTitle: false },
+      render: (v: string) => <Tooltip title={v}>{v}</Tooltip>,
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
         <div style={{ padding: 8 }}>
           <input
@@ -137,17 +138,19 @@ export default function CampaignDetail() {
       ),
       onFilter: (value, record) => record.email.toLowerCase().includes(String(value).toLowerCase()),
     },
-    { title: '姓名', key: 'name', render: (_, r) => r.last_name + r.first_name },
-    { title: '部門', dataIndex: 'department', key: 'department' },
+    { title: '姓名', key: 'name', width: 80, render: (_, r) => r.last_name + r.first_name },
+    { title: '部門', dataIndex: 'department', key: 'department', width: 80 },
     {
-      title: '狀態', dataIndex: 'status', key: 'status',
+      title: '狀態', dataIndex: 'status', key: 'status', width: 80,
       render: (s: string) => <Tag color={RECIPIENT_STATUS_COLOR[s] ?? 'default'}>{s}</Tag>,
     },
-    { title: '寄達', key: 'sent_at', render: (_, r) => fmt(r.sent_at) },
-    { title: '開信', key: 'opened_at', render: (_, r) => fmt(r.opened_at) },
-    { title: '點擊', key: 'clicked_at', render: (_, r) => fmt(r.clicked_at) },
-    { title: '提交', key: 'submitted_at', render: (_, r) => fmt(r.submitted_at) },
-    { title: '舉報', key: 'reported_at', render: (_, r) => fmt(r.reported_at) },
+    { title: '寄達', key: 'sent_at', width: 90, render: (_, r) => fmt(r.sent_at) },
+    { title: '開信', key: 'opened_at', width: 90, render: (_, r) => fmt(r.opened_at) },
+    { title: '點擊', key: 'clicked_at', width: 90, render: (_, r) => fmt(r.clicked_at) },
+    { title: '提交', key: 'submitted_at', width: 90, render: (_, r) => fmt(r.submitted_at) },
+    { title: '舉報', key: 'reported_at', width: 90, render: (_, r) => fmt(r.reported_at) },
+    { title: '錯誤原因', key: 'error_detail', width: 180, ellipsis: { showTitle: false },
+      render: (_, r) => r.error_detail ? <Tooltip title={r.error_detail} overlayStyle={{ maxWidth: 400 }}><Typography.Text type="danger" style={{ fontSize: 12 }}>{r.error_detail}</Typography.Text></Tooltip> : null },
   ];
 
   return (
@@ -268,7 +271,7 @@ export default function CampaignDetail() {
           dataSource={recipients}
           rowKey="email"
           size="small"
-          scroll={{ x: 900 }}
+          scroll={{ x: 1050 }}
           pagination={{ pageSize: 20, showSizeChanger: true }}
         />
       </Card>

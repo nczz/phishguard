@@ -39,6 +39,10 @@ func (r *AuditRepo) FindAll(limit, offset int) ([]model.AuditLog, int64, error) 
 type DBAuditLogger struct{ Repo *AuditRepo }
 
 func (l *DBAuditLogger) Log(_ context.Context, entry middleware.AuditEntry) error {
+	var detail *string
+	if entry.Detail != "" {
+		detail = &entry.Detail
+	}
 	return l.Repo.Create(&model.AuditLog{
 		TenantID:   entry.TenantID,
 		UserID:     entry.UserID,
@@ -47,7 +51,7 @@ func (l *DBAuditLogger) Log(_ context.Context, entry middleware.AuditEntry) erro
 		Action:     entry.Action,
 		Resource:   entry.Resource,
 		ResourceID: entry.ResourceID,
-		Detail:     entry.Detail,
+		Detail:     detail,
 		IPAddress:  entry.IPAddress,
 		UserAgent:  entry.UserAgent,
 	})
