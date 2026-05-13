@@ -1,0 +1,67 @@
+# PhishGuard 快速部署
+# 使用方式：
+#   1. 複製 .env.example 為 .env 並填入設定
+#   2. docker compose -f docker-compose.release.yml up -d
+#
+# 需求：Docker 24+, 2GB RAM
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:?請設定 DB_ROOT_PASS}
+      MYSQL_DATABASE: phishguard
+      MYSQL_USER: phishguard
+      MYSQL_PASSWORD: ${DB_PASS:?請設定 DB_PASS}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: mysqladmin ping -h localhost -u root -p${DB_ROOT_PASS}
+      interval: 10s
+      retries: 5
+    networks: [phishguard]
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      retries: 5
+    networks: [phishguard]
+
+  phishguard:
+    image: ghcr.io/nczz/phishguard:latest
+    restart: always
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "${APP_PORT:-3000}:80"
+      - "${TRACKER_PORT:-8090}:8090"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: phishguard
+      DB_PASS: ${DB_PASS}
+      DB_NAME: phishguard
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: ${JWT_SECRET:?請設定 JWT_SECRET}
+      ENCRYPT_KEY: ${ENCRYPT_KEY:?請設定 ENCRYPT_KEY}
+      API_ADDR: ":8080"
+      TRACKER_ADDR: ":8090"
+      TRACKER_BASE_URL: ${TRACKER_BASE_URL:?請設定 TRACKER_BASE_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@phishguard.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?請設定 ADMIN_PASSWORD}
+    networks: [phishguard]
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  phishguard:

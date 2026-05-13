@@ -9,9 +9,9 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ .
-RUN CGO_ENABLED=0 go build -o /bin/phishguard-api ./cmd/api && \
-    CGO_ENABLED=0 go build -o /bin/phishguard-tracker ./cmd/tracker && \
-    CGO_ENABLED=0 go build -o /bin/phishguard-worker ./cmd/worker
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/phishguard-api ./cmd/api && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/phishguard-tracker ./cmd/tracker && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/phishguard-worker ./cmd/worker
 
 # ── Stage 2: Build Frontend ──
 FROM node:20-alpine AS fe-builder
@@ -114,5 +114,12 @@ RUN chmod +x /entrypoint.sh
 
 # Ports: 80 (frontend+API), 8090 (tracker)
 EXPOSE 80 8090
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost/ > /dev/null || exit 1
+
+LABEL org.opencontainers.image.source="https://github.com/nczz/phishguard" \
+      org.opencontainers.image.description="PhishGuard - 企業釣魚模擬測試平台" \
+      org.opencontainers.image.licenses="MIT"
 
 CMD ["/entrypoint.sh"]
