@@ -40,93 +40,13 @@ COPY --from=fe-builder /app/dist /var/www/html
 
 # Nginx config (serves frontend + proxies /api to API server)
 RUN mkdir -p /run/nginx
-COPY <<'NGINX' /etc/nginx/http.d/default.conf
-server {
-    listen 80 default_server;
-
-    # Frontend
-    root /var/www/html;
-    index index.html;
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # API proxy
-    location /api/ {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        client_max_body_size 10m;
-    }
-}
-NGINX
+COPY deploy/nginx-aio.conf /etc/nginx/http.d/default.conf
 
 # Supervisord config
-COPY <<'SUPERVISOR' /etc/supervisord.conf
-[supervisord]
-nodaemon=true
-logfile=/dev/stdout
-logfile_maxbytes=0
-
-[program:api]
-command=/usr/local/bin/phishguard-api
-autorestart=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-
-[program:tracker]
-command=/usr/local/bin/phishguard-tracker
-autorestart=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-
-[program:worker]
-command=/usr/local/bin/phishguard-worker
-autorestart=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-
-[program:nginx]
-command=nginx -g "daemon off;"
-autorestart=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-SUPERVISOR
+COPY deploy/supervisord.conf /etc/supervisord.conf
 
 # Startup script: run migration then start services
-COPY <<'ENTRYPOINT' /entrypoint.sh
-#!/bin/sh
-cat > /var/www/html/config.js <<EOF
-window.__CONFIG__ = {
-  APP_DESCRIPTION: "${APP_DESCRIPTION:-企業釣魚模擬測試平台}"
-};
-EOF
-
-# Auto-migrate: run SQL if tables don't exist
-if [ -f /migration/001_initial_schema.sql ]; then
-  echo "Checking database schema..."
-  RESULT=$(mysql -h"${DB_HOST}" -P"${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" -e "SELECT 1 FROM tenants LIMIT 1" 2>/dev/null)
-  if [ -z "$RESULT" ]; then
-    echo "Running database migration..."
-    mysql -h"${DB_HOST}" -P"${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" < /migration/001_initial_schema.sql
-    echo "Migration complete."
-  else
-    echo "Schema already exists, skipping migration."
-  fi
-fi
-
-exec supervisord -c /etc/supervisord.conf
-ENTRYPOINT
+COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Ports: 80 (frontend+API), 8090 (tracker)
