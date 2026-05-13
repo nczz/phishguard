@@ -64,26 +64,50 @@ phishguard/
 
 ## 快速部署（Docker — 推薦）
 
+只需 Docker，不需要安裝 Go/Node。30 秒內啟動：
+
 ```bash
-# 1. 下載部署檔案
-curl -O https://raw.githubusercontent.com/nczz/phishguard/main/docker-compose.release.yml
-curl -O https://raw.githubusercontent.com/nczz/phishguard/main/.env.example
+# 一鍵啟動（複製貼上即可）
+mkdir phishguard && cd phishguard
 
-# 2. 建立設定檔
-cp .env.example .env
+curl -sO https://raw.githubusercontent.com/nczz/phishguard/main/docker-compose.release.yml
 
-# 3. 產生密鑰並編輯設定
-openssl rand -hex 32  # → 填入 ENCRYPT_KEY
-openssl rand -base64 32  # → 填入 JWT_SECRET
-vim .env  # 設定 DB 密碼、管理員帳號、TRACKER_BASE_URL
+cat > .env << 'EOF'
+DB_ROOT_PASS=changeme_root
+DB_PASS=changeme_db
+JWT_SECRET=changeme_jwt_please_use_openssl_rand
+ENCRYPT_KEY=0000000000000000000000000000000000000000000000000000000000000000
+TRACKER_BASE_URL=http://localhost:8090
+ADMIN_EMAIL=admin@phishguard.local
+ADMIN_PASSWORD=admin123
+EOF
 
-# 4. 啟動
+# 產生安全的密鑰（建議替換上面的預設值）
+# openssl rand -hex 32    → ENCRYPT_KEY
+# openssl rand -base64 32 → JWT_SECRET
+
 docker compose -f docker-compose.release.yml up -d
-
-# 5. 存取
-# 前端 + API: http://localhost:3000
-# Tracker:    http://localhost:8090
 ```
+
+等待約 30 秒後即可存取：
+- **前端**：http://localhost:3000
+- **帳號**：`admin@phishguard.local` / `admin123`
+
+### 更新版本
+
+```bash
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d
+```
+
+### Docker Image
+
+```
+ghcr.io/nczz/phishguard:latest    # 最新穩定版
+ghcr.io/nczz/phishguard:1.1.1     # 指定版本
+```
+
+支援 `linux/amd64` 和 `linux/arm64`。
 
 ### 環境變數
 
