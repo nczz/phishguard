@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 type Claims struct {
@@ -18,7 +19,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
+func AuthMiddleware(jwtSecret string, db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h := c.GetHeader("Authorization")
 		if !strings.HasPrefix(h, "Bearer ") {
@@ -35,7 +36,16 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
 		}
-		c.Set("claims", token.Claims.(*Claims))
+		claims := token.Claims.(*Claims)
+
+		// Check user is still active
+		var isActive bool
+		if err := db.Raw("SELECT is_active FROM users WHERE id = ?", claims.UserID).Scan(&isActive).Error; err != nil || !isActive {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "account disabled"})
+			return
+		}
+
+		c.Set("claims", claims)
 		c.Next()
 	}
 }

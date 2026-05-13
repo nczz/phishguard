@@ -11,11 +11,11 @@ func SetupRouter(h *Handler, jwtSecret string, auditLogger middleware.AuditLogge
 	auth := r.Group("/api/auth")
 	{
 		auth.POST("/login", middleware.LoginRateLimit(), h.Login)
-		auth.GET("/me", middleware.AuthMiddleware(jwtSecret), h.Me)
+		auth.GET("/me", middleware.AuthMiddleware(jwtSecret, h.DB), h.Me)
 	}
 
 	admin := r.Group("/api/admin",
-		middleware.AuthMiddleware(jwtSecret),
+		middleware.AuthMiddleware(jwtSecret, h.DB),
 		middleware.RoleRequired("platform_admin"),
 		middleware.TenantMiddleware(),
 		middleware.AuditMiddleware(auditLogger),
@@ -41,7 +41,7 @@ func SetupRouter(h *Handler, jwtSecret string, auditLogger middleware.AuditLogge
 	}
 
 	api := r.Group("/api",
-		middleware.AuthMiddleware(jwtSecret),
+		middleware.AuthMiddleware(jwtSecret, h.DB),
 		middleware.TenantMiddleware(),
 		middleware.RequireTenant(),
 		middleware.AuditMiddleware(auditLogger),
