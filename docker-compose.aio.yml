@@ -15,7 +15,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/migration:/docker-entrypoint-initdb.d
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
     healthcheck:
       test: mysqladmin ping -h localhost -u root -p${DB_ROOT_PASS}
       interval: 10s
