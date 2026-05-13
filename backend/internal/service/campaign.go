@@ -337,35 +337,45 @@ func countValidSeconds(start, end time.Time, workingHoursOnly, skipWeekends bool
 	return count
 }
 
-// isValidRecipientEmail checks if an email is valid and not a known abuse target.
-func isValidRecipientEmail(email string) bool {
+// GetEmailFilterReason returns the reason an email should be excluded from phishing tests.
+// Returns "" if the email is valid.
+func GetEmailFilterReason(email string) string {
 	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
-		return false
+		return "無效的 email 格式"
 	}
 	parts := strings.SplitN(email, "@", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return false
+		return "無效的 email 格式"
 	}
 	domain := strings.ToLower(parts[1])
 
-	// Block sending to public email providers (anti-abuse: phishing tests should target company domains only)
-	blockedDomains := map[string]bool{
-		"gmail.com": true, "yahoo.com": true, "hotmail.com": true, "outlook.com": true,
-		"aol.com": true, "icloud.com": true, "mail.com": true, "protonmail.com": true,
-		"zoho.com": true, "yandex.com": true, "gmx.com": true, "live.com": true,
+	blockedDomains := map[string]string{
+		"gmail.com": "公共信箱（Gmail）", "yahoo.com": "公共信箱（Yahoo）",
+		"hotmail.com": "公共信箱（Hotmail）", "outlook.com": "公共信箱（Outlook）",
+		"aol.com": "公共信箱（AOL）", "icloud.com": "公共信箱（iCloud）",
+		"mail.com": "公共信箱", "protonmail.com": "公共信箱（ProtonMail）",
+		"zoho.com": "公共信箱（Zoho）", "yandex.com": "公共信箱（Yandex）",
+		"gmx.com": "公共信箱（GMX）", "live.com": "公共信箱（Live）",
 	}
-	if blockedDomains[domain] {
-		return false
+	if reason, ok := blockedDomains[domain]; ok {
+		return reason + " — 釣魚測試僅限企業域名"
 	}
 
-	// Block role-based addresses
-	roleAddresses := []string{"abuse@", "postmaster@", "hostmaster@", "admin@", "webmaster@", "noc@", "security@", "mailer-daemon@"}
+	roleAddresses := map[string]string{
+		"abuse@": "角色信箱（abuse）", "postmaster@": "角色信箱（postmaster）",
+		"hostmaster@": "角色信箱", "webmaster@": "角色信箱",
+		"noc@": "角色信箱", "security@": "角色信箱",
+		"mailer-daemon@": "系統信箱", "admin@": "角色信箱（admin）",
+	}
 	lower := strings.ToLower(email)
-	for _, prefix := range roleAddresses {
+	for prefix, reason := range roleAddresses {
 		if strings.HasPrefix(lower, prefix) {
-			return false
+			return reason + " — 不應作為釣魚測試對象"
 		}
 	}
+	return ""
+}
 
-	return true
+func isValidRecipientEmail(email string) bool {
+	return GetEmailFilterReason(email) == ""
 }
