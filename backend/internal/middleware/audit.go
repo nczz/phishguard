@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -51,7 +52,11 @@ func AuditMiddleware(logger AuditLogger) gin.HandlerFunc {
 			UserAgent: c.Request.UserAgent(),
 		}
 
-		go logger.Log(context.Background(), entry)
+		go func() {
+			if err := logger.Log(context.Background(), entry); err != nil {
+				log.Printf("[AUDIT] failed to write audit log: %v", err)
+			}
+		}()
 	}
 }
 

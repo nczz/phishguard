@@ -3,7 +3,7 @@
 # 外部需要: MySQL + Redis
 
 # ── Stage 1: Build Go binaries ──
-FROM golang:1.24-alpine AS go-builder
+FROM golang:1.25-alpine AS go-builder
 ENV GOTOOLCHAIN=auto
 WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
