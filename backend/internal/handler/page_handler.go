@@ -12,11 +12,18 @@ import (
 
 func (h *Handler) ListPages(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
-	pages, err := h.PageRepo.FindAllByTenant(tid)
-	if err != nil {
-		serverError(c, err)
+	limit, offset := parsePagination(c)
+	where := "tenant_id = ? OR tenant_id IS NULL"
+	var pages []model.LandingPage
+	q := h.DB.Where(where, tid).Order("created_at DESC")
+	if limit > 0 {
+		var total int64
+		h.DB.Model(&model.LandingPage{}).Where(where, tid).Count(&total)
+		q.Limit(limit).Offset(offset).Find(&pages)
+		c.JSON(http.StatusOK, gin.H{"data": pages, "total": total})
 		return
 	}
+	q.Find(&pages)
 	c.JSON(http.StatusOK, pages)
 }
 

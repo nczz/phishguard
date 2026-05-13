@@ -42,11 +42,17 @@ func (h *Handler) CreateCampaign(c *gin.Context) {
 
 func (h *Handler) ListCampaigns(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
-	campaigns, err := h.CampaignRepo.FindAllByTenant(tid)
-	if err != nil {
-		serverError(c, err)
+	limit, offset := parsePagination(c)
+	var campaigns []model.Campaign
+	q := h.DB.Where("tenant_id = ?", tid).Order("created_at DESC")
+	if limit > 0 {
+		var total int64
+		h.DB.Model(&model.Campaign{}).Where("tenant_id = ?", tid).Count(&total)
+		q.Limit(limit).Offset(offset).Find(&campaigns)
+		c.JSON(http.StatusOK, gin.H{"data": campaigns, "total": total})
 		return
 	}
+	q.Find(&campaigns)
 	c.JSON(http.StatusOK, campaigns)
 }
 

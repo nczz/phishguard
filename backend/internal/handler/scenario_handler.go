@@ -12,11 +12,18 @@ import (
 
 func (h *Handler) ListScenarios(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
-	scenarios, err := h.ScenarioRepo.FindAllByTenant(tid)
-	if err != nil {
-		serverError(c, err)
+	limit, offset := parsePagination(c)
+	where := "tenant_id = ? OR tenant_id IS NULL"
+	var scenarios []model.Scenario
+	q := h.DB.Where(where, tid).Preload("Template").Preload("Page").Order("created_at DESC")
+	if limit > 0 {
+		var total int64
+		h.DB.Model(&model.Scenario{}).Where(where, tid).Count(&total)
+		q.Limit(limit).Offset(offset).Find(&scenarios)
+		c.JSON(http.StatusOK, gin.H{"data": scenarios, "total": total})
 		return
 	}
+	q.Find(&scenarios)
 	c.JSON(http.StatusOK, scenarios)
 }
 

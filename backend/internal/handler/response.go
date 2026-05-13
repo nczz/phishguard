@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,4 +38,18 @@ func notFound(c *gin.Context, message string) {
 func serverError(c *gin.Context, err error) {
 	log.Printf("[ERROR] %s %s: %v", c.Request.Method, c.Request.URL.Path, err)
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+}
+
+// parsePagination extracts page/page_size from query params.
+// Returns limit, offset. If page_size=0, returns -1, 0 (no pagination).
+func parsePagination(c *gin.Context) (limit, offset int) {
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "0"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if pageSize <= 0 {
+		return -1, 0
+	}
+	if page < 1 {
+		page = 1
+	}
+	return pageSize, (page - 1) * pageSize
 }

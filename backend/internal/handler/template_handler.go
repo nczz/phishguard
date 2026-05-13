@@ -12,11 +12,18 @@ import (
 
 func (h *Handler) ListTemplates(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
-	templates, err := h.TemplateRepo.FindAllByTenant(tid)
-	if err != nil {
-		serverError(c, err)
+	limit, offset := parsePagination(c)
+	where := "tenant_id = ? OR tenant_id IS NULL"
+	var templates []model.EmailTemplate
+	q := h.DB.Where(where, tid).Order("created_at DESC")
+	if limit > 0 {
+		var total int64
+		h.DB.Model(&model.EmailTemplate{}).Where(where, tid).Count(&total)
+		q.Limit(limit).Offset(offset).Find(&templates)
+		c.JSON(http.StatusOK, gin.H{"data": templates, "total": total})
 		return
 	}
+	q.Find(&templates)
 	c.JSON(http.StatusOK, templates)
 }
 
