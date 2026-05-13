@@ -103,3 +103,19 @@ func GenerateToken(secret string, userID int64, tenantID *int64, role, email str
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
+
+// GenerateImpersonationToken creates a short-lived (1h) token for admin impersonation.
+func GenerateImpersonationToken(secret string, adminUserID int64, tenantID *int64, email string) (string, error) {
+	claims := Claims{
+		UserID:   adminUserID,
+		TenantID: tenantID,
+		Role:     "tenant_admin",
+		Email:    email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   "impersonation",
+		},
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
+}

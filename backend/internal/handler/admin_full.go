@@ -213,7 +213,7 @@ func (h *Handler) AdminImpersonate(c *gin.Context) {
 	tid, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	admin := middleware.GetClaims(c)
 
-	token, err := middleware.GenerateToken(h.JWTSecret, admin.UserID, &tid, "tenant_admin", admin.Email)
+	token, err := middleware.GenerateImpersonationToken(h.JWTSecret, admin.UserID, &tid, admin.Email)
 	if err != nil {
 		serverError(c, err)
 		return
