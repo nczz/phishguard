@@ -6,6 +6,7 @@ import {
 } from 'antd';
 import { api } from '../../api/client';
 import type { Tenant, Campaign, User } from '../../api/client';
+import { useAuth } from '../../hooks/useAuth';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
@@ -16,6 +17,7 @@ const statusColor: Record<string, string> = { draft: 'default', running: 'proces
 export default function TenantDetail() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
+  const { impersonate } = useAuth();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -56,8 +58,7 @@ export default function TenantDetail() {
   const handleImpersonate = async () => {
     try {
       const res = await api.post<{ token: string; tenant_id: string }>('/admin/tenants/' + id + '/impersonate');
-      localStorage.setItem('impersonate_from', localStorage.getItem('token') || '');
-      localStorage.setItem('impersonate_token', res.token);
+      impersonate(res.token);
       nav('/app/dashboard');
     } catch { message.error('模擬失敗'); }
   };
