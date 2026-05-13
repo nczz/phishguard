@@ -10,7 +10,7 @@ func SetupRouter(h *Handler, jwtSecret string, auditLogger middleware.AuditLogge
 
 	auth := r.Group("/api/auth")
 	{
-		auth.POST("/login", h.Login)
+		auth.POST("/login", middleware.LoginRateLimit(), h.Login)
 		auth.GET("/me", middleware.AuthMiddleware(jwtSecret), h.Me)
 	}
 
