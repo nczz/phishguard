@@ -35,6 +35,7 @@ func Encrypt(hexKey, plaintext string) ([]byte, error) {
 }
 
 // Decrypt decrypts AES-256-GCM ciphertext (nonce prepended).
+// Falls back to treating data as plaintext if decryption fails (backward compat with pre-encryption data).
 func Decrypt(hexKey string, ciphertext []byte) (string, error) {
 	if len(ciphertext) == 0 {
 		return "", nil
@@ -53,11 +54,13 @@ func Decrypt(hexKey string, ciphertext []byte) (string, error) {
 	}
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return "", errors.New("ciphertext too short")
+		// Too short to be encrypted — treat as legacy plaintext
+		return string(ciphertext), nil
 	}
 	plaintext, err := gcm.Open(nil, ciphertext[:nonceSize], ciphertext[nonceSize:], nil)
 	if err != nil {
-		return "", err
+		// Decryption failed — assume legacy plaintext data
+		return string(ciphertext), nil
 	}
 	return string(plaintext), nil
 }

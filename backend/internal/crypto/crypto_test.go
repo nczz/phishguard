@@ -43,8 +43,26 @@ func TestDecryptWrongKey(t *testing.T) {
 	key2 := hex.EncodeToString([]byte("fedcba9876543210fedcba9876543210"))
 
 	enc, _ := Encrypt(key1, "secret")
-	_, err := Decrypt(key2, enc)
-	if err == nil {
-		t.Fatal("expected error decrypting with wrong key")
+	// Wrong key → fallback to plaintext (returns raw bytes as string)
+	dec, err := Decrypt(key2, enc)
+	if err != nil {
+		t.Fatalf("expected fallback, got error: %v", err)
+	}
+	// Fallback returns the raw ciphertext as string (not the original plaintext)
+	if dec == "secret" {
+		t.Fatal("should not decrypt correctly with wrong key")
+	}
+}
+
+func TestDecryptLegacyPlaintext(t *testing.T) {
+	key := hex.EncodeToString([]byte("0123456789abcdef0123456789abcdef"))
+	// Simulate legacy data: stored as plain bytes without encryption
+	legacy := []byte("my-smtp-password")
+	dec, err := Decrypt(key, legacy)
+	if err != nil {
+		t.Fatalf("legacy decrypt error: %v", err)
+	}
+	if dec != "my-smtp-password" {
+		t.Fatalf("got %q, want %q", dec, "my-smtp-password")
 	}
 }
