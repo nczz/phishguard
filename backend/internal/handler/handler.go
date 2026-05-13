@@ -9,6 +9,7 @@ import (
 type Handler struct {
 	DB              *gorm.DB
 	JWTSecret       string
+	EncryptKey      string
 	AuthService     *service.AuthService
 	TenantService   *service.TenantService
 	CampaignService *service.CampaignService

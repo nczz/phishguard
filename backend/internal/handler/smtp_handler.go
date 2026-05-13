@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nczz/phishguard/internal/crypto"
 	"github.com/nczz/phishguard/internal/mailer"
 	"github.com/nczz/phishguard/internal/middleware"
 	"github.com/nczz/phishguard/internal/model"
@@ -64,15 +65,28 @@ func (h *Handler) CreateSMTPProfile(c *gin.Context) {
 		Host:          req.Host,
 		Port:          req.Port,
 		Username:      req.Username,
-		PasswordEnc:   []byte(req.Password),
 		FromAddress:   req.FromAddress,
 		FromName:      req.FromName,
 		TLSRequired:   req.TLSRequired,
 		MailgunDomain: req.MailgunDomain,
-		MailgunAPIKey: []byte(req.MailgunAPIKey),
 		SESRegion:     req.SESRegion,
-		SESAccessKey:  []byte(req.SESAccessKey),
-		SESSecretKey:  []byte(req.SESSecretKey),
+	}
+	var encErr error
+	if p.PasswordEnc, encErr = crypto.Encrypt(h.EncryptKey, req.Password); encErr != nil {
+		serverError(c, encErr)
+		return
+	}
+	if p.MailgunAPIKey, encErr = crypto.Encrypt(h.EncryptKey, req.MailgunAPIKey); encErr != nil {
+		serverError(c, encErr)
+		return
+	}
+	if p.SESAccessKey, encErr = crypto.Encrypt(h.EncryptKey, req.SESAccessKey); encErr != nil {
+		serverError(c, encErr)
+		return
+	}
+	if p.SESSecretKey, encErr = crypto.Encrypt(h.EncryptKey, req.SESSecretKey); encErr != nil {
+		serverError(c, encErr)
+		return
 	}
 	if err := h.SMTPRepo.Create(&p); err != nil {
 		serverError(c, err)
@@ -118,15 +132,31 @@ func (h *Handler) UpdateSMTPProfile(c *gin.Context) {
 	if req.Host != "" { existing.Host = req.Host }
 	if req.Port != nil { existing.Port = req.Port }
 	if req.Username != "" { existing.Username = req.Username }
-	if req.Password != "" { existing.PasswordEnc = []byte(req.Password) }
+	if req.Password != "" {
+		enc, err := crypto.Encrypt(h.EncryptKey, req.Password)
+		if err != nil { serverError(c, err); return }
+		existing.PasswordEnc = enc
+	}
 	if req.FromAddress != "" { existing.FromAddress = req.FromAddress }
 	if req.FromName != "" { existing.FromName = req.FromName }
 	if req.TLSRequired != nil { existing.TLSRequired = *req.TLSRequired }
 	if req.MailgunDomain != "" { existing.MailgunDomain = req.MailgunDomain }
-	if req.MailgunAPIKey != "" { existing.MailgunAPIKey = []byte(req.MailgunAPIKey) }
+	if req.MailgunAPIKey != "" {
+		enc, err := crypto.Encrypt(h.EncryptKey, req.MailgunAPIKey)
+		if err != nil { serverError(c, err); return }
+		existing.MailgunAPIKey = enc
+	}
 	if req.SESRegion != "" { existing.SESRegion = req.SESRegion }
-	if req.SESAccessKey != "" { existing.SESAccessKey = []byte(req.SESAccessKey) }
-	if req.SESSecretKey != "" { existing.SESSecretKey = []byte(req.SESSecretKey) }
+	if req.SESAccessKey != "" {
+		enc, err := crypto.Encrypt(h.EncryptKey, req.SESAccessKey)
+		if err != nil { serverError(c, err); return }
+		existing.SESAccessKey = enc
+	}
+	if req.SESSecretKey != "" {
+		enc, err := crypto.Encrypt(h.EncryptKey, req.SESSecretKey)
+		if err != nil { serverError(c, err); return }
+		existing.SESSecretKey = enc
+	}
 
 	if err := h.SMTPRepo.Update(tid, existing); err != nil {
 		serverError(c, err)
@@ -156,17 +186,25 @@ func (h *Handler) TestSMTPProfile(c *gin.Context) {
 	}
 
 	config := map[string]string{
-		"host":       profile.Host,
-		"port":       fmt.Sprintf("%d", derefInt(profile.Port)),
-		"username":   profile.Username,
-		"password":   string(profile.PasswordEnc),
-		"tls":        fmt.Sprintf("%t", profile.TLSRequired),
-		"domain":     profile.MailgunDomain,
-		"api_key":    string(profile.MailgunAPIKey),
-		"region":     profile.SESRegion,
-		"access_key": string(profile.SESAccessKey),
-		"secret_key": string(profile.SESSecretKey),
+		"host":     profile.Host,
+		"port":     fmt.Sprintf("%d", derefInt(profile.Port)),
+		"username": profile.Username,
+		"tls":      fmt.Sprintf("%t", profile.TLSRequired),
+		"domain":   profile.MailgunDomain,
+		"region":   profile.SESRegion,
 	}
+	if pw, err := crypto.Decrypt(h.EncryptKey, profile.PasswordEnc); err != nil {
+		serverError(c, err); return
+	} else { config["password"] = pw }
+	if v, err := crypto.Decrypt(h.EncryptKey, profile.MailgunAPIKey); err != nil {
+		serverError(c, err); return
+	} else { config["api_key"] = v }
+	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESAccessKey); err != nil {
+		serverError(c, err); return
+	} else { config["access_key"] = v }
+	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESSecretKey); err != nil {
+		serverError(c, err); return
+	} else { config["secret_key"] = v }
 	m, err := mailer.NewMailer(profile.MailerType, config)
 	if err != nil {
 		serverError(c, err)

@@ -16,7 +16,8 @@ type Config struct {
 
 	RedisAddr string
 
-	JWTSecret string
+	JWTSecret  string
+	EncryptKey string
 
 	APIAddr        string
 	TrackerAddr    string
@@ -35,6 +36,7 @@ func Load() *Config {
 		DBName:         env("DB_NAME", "phishguard"),
 		RedisAddr:      env("REDIS_ADDR", "127.0.0.1:6379"),
 		JWTSecret:      requireEnv("JWT_SECRET"),
+		EncryptKey:     requireEnv("ENCRYPT_KEY"),
 		APIAddr:        env("API_ADDR", ":8080"),
 		TrackerAddr:    env("TRACKER_ADDR", ":8090"),
 		TrackerBaseURL: env("TRACKER_BASE_URL", "http://localhost:8090"),

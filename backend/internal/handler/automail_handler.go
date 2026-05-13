@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nczz/phishguard/internal/crypto"
 	"github.com/nczz/phishguard/internal/mailer"
 	"github.com/nczz/phishguard/internal/middleware"
 	"github.com/nczz/phishguard/internal/service"
@@ -32,17 +33,25 @@ func (h *Handler) SendCampaignReportEmail(c *gin.Context) {
 	}
 
 	config := map[string]string{
-		"host":       profile.Host,
-		"port":       fmt.Sprintf("%d", derefInt(profile.Port)),
-		"username":   profile.Username,
-		"password":   string(profile.PasswordEnc),
-		"tls":        fmt.Sprintf("%t", profile.TLSRequired),
-		"domain":     profile.MailgunDomain,
-		"api_key":    string(profile.MailgunAPIKey),
-		"region":     profile.SESRegion,
-		"access_key": string(profile.SESAccessKey),
-		"secret_key": string(profile.SESSecretKey),
+		"host":     profile.Host,
+		"port":     fmt.Sprintf("%d", derefInt(profile.Port)),
+		"username": profile.Username,
+		"tls":      fmt.Sprintf("%t", profile.TLSRequired),
+		"domain":   profile.MailgunDomain,
+		"region":   profile.SESRegion,
 	}
+	if pw, err := crypto.Decrypt(h.EncryptKey, profile.PasswordEnc); err != nil {
+		serverError(c, err); return
+	} else { config["password"] = pw }
+	if v, err := crypto.Decrypt(h.EncryptKey, profile.MailgunAPIKey); err != nil {
+		serverError(c, err); return
+	} else { config["api_key"] = v }
+	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESAccessKey); err != nil {
+		serverError(c, err); return
+	} else { config["access_key"] = v }
+	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESSecretKey); err != nil {
+		serverError(c, err); return
+	} else { config["secret_key"] = v }
 	m, err := mailer.NewMailer(profile.MailerType, config)
 	if err != nil {
 		serverError(c, err)

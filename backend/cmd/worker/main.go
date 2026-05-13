@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/nczz/phishguard/config"
+	"github.com/nczz/phishguard/internal/crypto"
 	"github.com/nczz/phishguard/internal/db"
 	"github.com/nczz/phishguard/internal/mailer"
 	"github.com/nczz/phishguard/internal/model"
@@ -85,7 +86,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 	}
 
 	// Create mailer
-	m, err := buildMailer(&smtp)
+	m, err := buildMailer(&smtp, cfg.EncryptKey)
 	if err != nil {
 		log.Printf("campaign %d: failed to create mailer: %v", campaign.ID, err)
 		return
@@ -273,7 +274,7 @@ func indexOf(s, sub string) int {
 	return -1
 }
 
-func buildMailer(smtp *model.SMTPProfile) (mailer.Mailer, error) {
+func buildMailer(smtp *model.SMTPProfile, encryptKey string) (mailer.Mailer, error) {
 	cfg := map[string]string{
 		"from_address": smtp.FromAddress,
 		"from_name":    smtp.FromName,
@@ -285,17 +286,33 @@ func buildMailer(smtp *model.SMTPProfile) (mailer.Mailer, error) {
 			cfg["port"] = fmt.Sprintf("%d", *smtp.Port)
 		}
 		cfg["username"] = smtp.Username
-		cfg["password"] = string(smtp.PasswordEnc)
+		pw, err := crypto.Decrypt(encryptKey, smtp.PasswordEnc)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt password: %w", err)
+		}
+		cfg["password"] = pw
 		if smtp.TLSRequired {
 			cfg["tls"] = "true"
 		}
 	case "mailgun":
 		cfg["domain"] = smtp.MailgunDomain
-		cfg["api_key"] = string(smtp.MailgunAPIKey)
+		apiKey, err := crypto.Decrypt(encryptKey, smtp.MailgunAPIKey)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt mailgun api key: %w", err)
+		}
+		cfg["api_key"] = apiKey
 	case "ses":
 		cfg["region"] = smtp.SESRegion
-		cfg["access_key"] = string(smtp.SESAccessKey)
-		cfg["secret_key"] = string(smtp.SESSecretKey)
+		ak, err := crypto.Decrypt(encryptKey, smtp.SESAccessKey)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt ses access key: %w", err)
+		}
+		cfg["access_key"] = ak
+		sk, err := crypto.Decrypt(encryptKey, smtp.SESSecretKey)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt ses secret key: %w", err)
+		}
+		cfg["secret_key"] = sk
 	}
 	return mailer.NewMailer(smtp.MailerType, cfg)
 }
@@ -313,7 +330,7 @@ func sendCompletionReport(database *gorm.DB, cfg *config.Config, resultRepo *rep
 	if err := database.First(&smtp, campaign.SMTPProfileID).Error; err != nil {
 		return
 	}
-	m, err := buildMailer(&smtp)
+	m, err := buildMailer(&smtp, cfg.EncryptKey)
 	if err != nil {
 		return
 	}
