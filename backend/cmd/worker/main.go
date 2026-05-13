@@ -20,6 +20,18 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// rateLimiters holds per-provider singleton rate limiters (persists across polling cycles)
+var rateLimiters = make(map[string]*mailer.RateLimiter)
+
+func getRateLimiter(providerType string) *mailer.RateLimiter {
+	if rl, ok := rateLimiters[providerType]; ok {
+		return rl
+	}
+	rl := mailer.NewRateLimiter(providerType)
+	rateLimiters[providerType] = rl
+	return rl
+}
+
 func main() {
 	cfg := config.Load()
 	database := db.Init(cfg.DBDSN)
@@ -139,7 +151,7 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 	log.Printf("campaign %d: sending %d emails", campaign.ID, len(results))
 
 	// Create rate limiter based on provider type
-	rl := mailer.NewRateLimiter(smtp.MailerType)
+	rl := getRateLimiter(smtp.MailerType)
 
 	for i := range results {
 		r := &results[i]
