@@ -177,8 +177,6 @@ func (h *Handler) BatchSetActiveRecipients(c *gin.Context) {
 
 func (h *Handler) ValidateRecipients(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
-	var results []model.Result
-	h.DB.Where("tenant_id = ?", tid).Find(&results) // just to use tid
 
 	// Get all recipients for this tenant
 	count, _ := h.RecipientRepo.CountByTenant(tid)

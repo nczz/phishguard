@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,11 +54,20 @@ func main() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
 	processMailQueue(database, cfg, resultRepo, campaignRepo)
 	runScheduler(database, campaignSvc)
-	for range ticker.C {
-		processMailQueue(database, cfg, resultRepo, campaignRepo)
-		runScheduler(database, campaignSvc)
+	for {
+		select {
+		case <-ticker.C:
+			processMailQueue(database, cfg, resultRepo, campaignRepo)
+			runScheduler(database, campaignSvc)
+		case sig := <-sigCh:
+			log.Printf("Received %v, shutting down gracefully...", sig)
+			return
+		}
 	}
 }
 
