@@ -24,28 +24,30 @@ func (s *TenantService) Create(name, slug, plan string) (*model.Tenant, error) {
 }
 
 func (s *TenantService) CreateWithAdmin(name, slug, plan, adminEmail, adminPassword string) (*model.Tenant, error) {
-	t, err := s.Create(name, slug, plan)
-	if err != nil {
-		return nil, err
-	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-	err = s.UserRepo.Create(&model.User{
-		TenantID:     &t.ID,
-		Email:        adminEmail,
-		Name:         "Tenant Admin",
-		PasswordHash: string(hash),
-		Role:         "tenant_admin",
-		IsActive:     true,
+	var tenant *model.Tenant
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		t := &model.Tenant{Name: name, Slug: slug, Plan: plan, IsActive: true, MaxRecipients: 100}
+		if err := tx.Create(t).Error; err != nil {
+			return err
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		if err := tx.Create(&model.User{
+			TenantID:     &t.ID,
+			Email:        adminEmail,
+			Name:         "Tenant Admin",
+			PasswordHash: string(hash),
+			Role:         "tenant_admin",
+			IsActive:     true,
+		}).Error; err != nil {
+			return err
+		}
+		tenant = t
+		return SeedTenantData(tx, t.ID)
 	})
-	if err != nil {
-		return nil, err
-	}
-	// Seed default templates, scenarios, landing pages, sample recipients
-	_ = SeedTenantData(s.DB, t.ID)
-	return t, nil
+	return tenant, err
 }
 
 func (s *TenantService) GetDashboardStats() (*PlatformStats, error) {
