@@ -17,6 +17,7 @@ import (
 	"github.com/nczz/phishguard/internal/repo"
 	"github.com/nczz/phishguard/internal/service"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func main() {
@@ -92,19 +93,36 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 		return
 	}
 
-	// Find scheduled results ready to send
+	// Claim results: SELECT FOR UPDATE SKIP LOCKED → mark as "sending"
 	var results []model.Result
 	now := time.Now().UTC()
-	database.Where("campaign_id = ? AND status = ? AND (send_date IS NULL OR send_date <= ?)",
-		campaign.ID, "scheduled", now).
-		Preload("Recipient").
-		Find(&results)
+	err = database.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+			Where("campaign_id = ? AND status = ? AND (send_date IS NULL OR send_date <= ?)",
+				campaign.ID, "scheduled", now).
+			Preload("Recipient").
+			Find(&results).Error; err != nil {
+			return err
+		}
+		if len(results) == 0 {
+			return nil
+		}
+		ids := make([]int64, len(results))
+		for i := range results {
+			ids[i] = results[i].ID
+		}
+		return tx.Model(&model.Result{}).Where("id IN ?", ids).Update("status", model.ResultStatusSending).Error
+	})
+	if err != nil {
+		log.Printf("campaign %d: claim results error: %v", campaign.ID, err)
+		return
+	}
 
 	if len(results) == 0 {
 		// Check if all results are sent/error — mark campaign complete
 		var pending int64
 		database.Model(&model.Result{}).
-			Where("campaign_id = ? AND status = ?", campaign.ID, "scheduled").
+			Where("campaign_id = ? AND status IN ?", campaign.ID, []string{"scheduled", model.ResultStatusSending}).
 			Count(&pending)
 		if pending == 0 {
 			now := time.Now().UTC()
@@ -132,9 +150,10 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 		// Check domain rate limit
 		recipientDomain := extractDomain(r.Recipient.Email)
 		if !rl.Wait(recipientDomain) {
-			// Domain hourly limit reached — defer to next cycle
-			log.Printf("campaign %d: domain %s hourly limit reached (%d), deferring %s",
-				campaign.ID, recipientDomain, rl.GetDomainCount(recipientDomain), r.Recipient.Email)
+			// Domain hourly limit reached — revert to scheduled for next cycle
+			database.Model(r).Update("status", "scheduled")
+			log.Printf("campaign %d: domain %s hourly limit reached, deferring %s",
+				campaign.ID, recipientDomain, r.Recipient.Email)
 			continue
 		}
 
@@ -171,7 +190,8 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 		if err := m.Send(context.Background(), msg); err != nil {
 			log.Printf("campaign %d: failed to send to %s: %v", campaign.ID, r.Recipient.Email, err)
 			if isTransientError(err) {
-				log.Printf("campaign %d: will retry %s next cycle", campaign.ID, r.Recipient.Email)
+				// Revert to scheduled for retry next cycle
+				database.Model(r).Update("status", "scheduled")
 				continue
 			}
 			// Permanent error — mark as failed

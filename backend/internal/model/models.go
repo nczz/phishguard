@@ -22,6 +22,9 @@ const (
 	EventError       = "error"
 )
 
+// Result intermediate status (used by worker state machine)
+const ResultStatusSending = "sending"
+
 type Tenant struct {
 	ID                  int64  `gorm:"primaryKey" json:"id"`
 	Name                string `gorm:"size:255;not null" json:"name"`
