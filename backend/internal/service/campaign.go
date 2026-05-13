@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/nczz/phishguard/internal/model"
 	"github.com/nczz/phishguard/internal/repo"
+	"gorm.io/gorm"
 )
 
 type CreateCampaignRequest struct {
@@ -218,13 +219,17 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		}
 	}
 
-	if err := s.ResultRepo.BulkCreate(results); err != nil {
-		return fmt.Errorf("bulk create results: %w", err)
+	if err := s.CampaignRepo.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.CreateInBatches(results, 500).Error; err != nil {
+			return fmt.Errorf("bulk create results: %w", err)
+		}
+		c.Status = model.CampaignStatusSending
+		c.LaunchedAt = &now
+		return tx.Save(c).Error
+	}); err != nil {
+		return err
 	}
-
-	c.Status = model.CampaignStatusSending
-	c.LaunchedAt = &now
-	return s.CampaignRepo.Update(c)
+	return nil
 }
 
 // generateTimeSlots distributes N send times across a window,
