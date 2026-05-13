@@ -81,7 +81,7 @@ func runOneAutoTest(db *gorm.DB, campaignSvc *CampaignService, cfg *model.AutoTe
 		return fmt.Errorf("create campaign: %w", err)
 	}
 
-	if err := campaignSvc.LaunchCampaign(cfg.TenantID, campaign.ID); err != nil {
+	if err := campaignSvc.LaunchCampaign(cfg.TenantID, campaign.ID, false, nil); err != nil {
 		return fmt.Errorf("launch campaign: %w", err)
 	}
 

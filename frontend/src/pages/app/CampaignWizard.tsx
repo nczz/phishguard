@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Steps, Card, Row, Col, Button, Checkbox, Radio, Slider, Input, DatePicker,
-  Tag, Modal, Spin, Typography, message, Space, Alert, Descriptions, Tooltip,
+  Tag, Modal, Spin, Typography, message, Space, Alert, Descriptions, Tooltip, Table,
 } from 'antd';
 import { RocketOutlined, EyeOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -12,7 +12,7 @@ import { api } from '../../api/client';
 
 const { Title, Text } = Typography;
 
-type SelectionMode = 'all' | 'department' | 'sample';
+type SelectionMode = 'all' | 'department' | 'sample' | 'individual';
 
 const CATEGORY_ICON: Record<string, string> = {
   password: '🔐',
@@ -61,6 +61,8 @@ export default function CampaignWizard() {
   const [workingHoursOnly, setWorkingHoursOnly] = useState(true);
   const [skipWeekends, setSkipWeekends] = useState(true);
   const [campaignName, setCampaignName] = useState(defaultCampaignName);
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
+  const [skipCooldown, setSkipCooldown] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -88,6 +90,7 @@ export default function CampaignWizard() {
   );
 
   const estimatedCount = useMemo(() => {
+    if (selectionMode === 'individual') return selectedRecipientIds.length;
     let pool = allRecipients;
     if (selectionMode === 'department') {
       pool = pool.filter(r => departments.includes(r.department));
@@ -96,14 +99,14 @@ export default function CampaignWizard() {
       return Math.max(1, Math.round(pool.length * samplePercent / 100));
     }
     return pool.length;
-  }, [allRecipients, selectionMode, departments, samplePercent]);
+  }, [allRecipients, selectionMode, departments, samplePercent, selectedRecipientIds]);
 
   const scenarioObj = scenarios.find(s => s.id === selectedScenario);
   const smtpProfile = smtpProfiles[0] ?? null;
 
   const canNext = (s: number) => {
     if (s === 0) return autoRandom || !!selectedScenario;
-    if (s === 1) return selectedGroups.length > 0 && (selectionMode !== 'department' || departments.length > 0);
+    if (s === 1) return selectedGroups.length > 0 && (selectionMode === 'individual' ? selectedRecipientIds.length > 0 : selectionMode !== 'department' || departments.length > 0);
     return true;
   };
 
@@ -126,7 +129,10 @@ export default function CampaignWizard() {
         skip_weekends: skipWeekends,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
-      await api.post('/campaigns/' + campaign.id + '/launch');
+      await api.post('/campaigns/' + campaign.id + '/launch', {
+        skip_cooldown: skipCooldown,
+        recipient_ids: selectionMode === 'individual' ? selectedRecipientIds.map(Number) : undefined,
+      });
       message.success('測試已發送！');
       navigate('/app/campaigns/' + campaign.id);
     } catch {
@@ -195,10 +201,11 @@ export default function CampaignWizard() {
             onChange={e => setSelectionMode(e.target.value)}
             style={{ marginBottom: 16 }}
           >
-            <Space orientation="vertical">
+            <Space direction="vertical">
               <Radio value="all">全部發送（{allRecipients.length} 人）<Tooltip title={tips.selectionAll}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
               <Radio value="department">依部門篩選 <Tooltip title={tips.selectionDept}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
               <Radio value="sample">隨機抽樣 <Tooltip title={tips.selectionRandom}><QuestionCircleOutlined style={{color:'#999'}} /></Tooltip></Radio>
+              <Radio value="individual">手動挑選個別人員</Radio>
             </Space>
           </Radio.Group>
 
@@ -233,6 +240,36 @@ export default function CampaignWizard() {
               預估 {estimatedCount} 人
             </Text>
           )}
+
+          {selectionMode === 'individual' && (
+            <div style={{ marginBottom: 16 }}>
+              <Table
+                size="small"
+                rowKey="id"
+                dataSource={allRecipients}
+                scroll={{ x: 500, y: 300 }}
+                pagination={false}
+                rowSelection={{
+                  selectedRowKeys: selectedRecipientIds,
+                  onChange: (keys) => setSelectedRecipientIds(keys as string[]),
+                }}
+                columns={[
+                  { title: 'Email', dataIndex: 'email', width: 200, ellipsis: true },
+                  { title: '姓名', key: 'name', width: 100, render: (_: unknown, r: { last_name: string; first_name: string }) => r.last_name + r.first_name },
+                  { title: '部門', dataIndex: 'department', width: 100 },
+                ]}
+              />
+              <Text type="secondary">已選 {selectedRecipientIds.length} 人</Text>
+            </div>
+          )}
+
+          <Checkbox
+            checked={skipCooldown}
+            onChange={e => setSkipCooldown(e.target.checked)}
+            style={{ marginBottom: 16, display: 'block' }}
+          >
+            忽略 30 天冷卻期（強制發送給所有選中對象）
+          </Checkbox>
 
           <Card size="small" title="發送排程" style={{ marginTop: 16 }}>
             <Radio.Group value={sendMode} onChange={e => setSendMode(e.target.value)} style={{ marginBottom: 12 }}>

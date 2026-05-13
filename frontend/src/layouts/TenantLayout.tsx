@@ -74,7 +74,7 @@ export default function TenantLayout() {
           <Typography.Text style={{ color: '#fff' }}>{user?.name}</Typography.Text>
           <Button size="small" onClick={logout}>Logout</Button>
         </Header>
-        <Content style={{ padding: 24 }}>
+        <Content style={{ padding: 24, overflow: 'auto' }}>
           {impersonating && (
             <Alert
               type="warning"

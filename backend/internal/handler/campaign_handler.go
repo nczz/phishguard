@@ -79,6 +79,12 @@ func (h *Handler) LaunchCampaign(c *gin.Context) {
 		return
 	}
 
+	var req struct {
+		SkipCooldown bool    `json:"skip_cooldown"`
+		RecipientIDs []int64 `json:"recipient_ids"`
+	}
+	_ = c.ShouldBindJSON(&req) // optional body
+
 	// Plan limit check: monthly email quota
 	var tenant model.Tenant
 	if err := h.DB.First(&tenant, tid).Error; err == nil {
@@ -95,7 +101,7 @@ func (h *Handler) LaunchCampaign(c *gin.Context) {
 		}
 	}
 
-	if err := h.CampaignService.LaunchCampaign(tid, id); err != nil {
+	if err := h.CampaignService.LaunchCampaign(tid, id, req.SkipCooldown, req.RecipientIDs); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

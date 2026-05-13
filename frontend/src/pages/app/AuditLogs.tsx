@@ -23,7 +23,7 @@ export default function AuditLogs() {
 
   const columns = [
     { title: '時間', dataIndex: 'created_at', width: 170, render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss') },
-    { title: '使用者', dataIndex: 'user_email' },
+    { title: '使用者', dataIndex: 'user_email', width: 200, ellipsis: true },
     { title: '動作', dataIndex: 'action', width: 120, render: (v: string) => <Tag>{v}</Tag> },
     { title: '資源', dataIndex: 'resource', width: 120 },
     { title: 'IP', dataIndex: 'ip_address', width: 140 },
@@ -36,6 +36,7 @@ export default function AuditLogs() {
         loading={loading}
         columns={columns}
         dataSource={data}
+        scroll={{ x: 750 }}
         pagination={{ current: page, pageSize: PAGE_SIZE, total, onChange: setPage }}
         expandable={{ expandedRowRender: (r) => <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.detail}</pre> }}
       />

@@ -35,18 +35,22 @@ export default function CampaignDetail() {
   const [report, setReport] = useState<CampaignReport>();
   const [recipients, setRecipients] = useState<RecipientResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     try {
-      const [c, r, rec] = await Promise.all([
-        api.get<Campaign>('/campaigns/' + id),
+      const c = await api.get<Campaign>('/campaigns/' + id);
+      setCampaign(c);
+      // Report and recipients may fail for draft campaigns — that's OK
+      const [r, rec] = await Promise.allSettled([
         api.get<CampaignReport>('/campaigns/' + id + '/report'),
         api.get<RecipientResult[]>('/campaigns/' + id + '/recipients'),
       ]);
-      setCampaign(c);
-      setReport(r);
-      setRecipients(rec);
+      if (r.status === 'fulfilled') setReport(r.value);
+      if (rec.status === 'fulfilled') setRecipients(rec.value);
+    } catch {
+      setError('無法載入活動資料');
     } finally {
       setLoading(false);
     }
@@ -62,9 +66,9 @@ export default function CampaignDetail() {
   }, [campaign?.status, fetchData]);
 
   if (loading) return <Spin style={{ display: 'block', margin: '20vh auto' }} size="large" />;
-  if (!campaign || !report) return null;
+  if (error || !campaign) return <Card><Typography.Text type="danger">{error || '活動不存在'}</Typography.Text></Card>;
 
-  const { funnel } = report;
+  const funnel = report?.funnel ?? { total: 0, sent: 0, opened: 0, clicked: 0, downloaded: 0, submitted: 0, reported: 0 };
   const funnelData = [
     { name: '寄達', value: funnel.sent },
     { name: '開信', value: funnel.opened },
@@ -76,7 +80,7 @@ export default function CampaignDetail() {
 
   const pct = (n: number) => funnel.total ? ((n / funnel.total) * 100).toFixed(1) + '%' : '0%';
 
-  const deptsSorted = [...report.departments].sort(
+  const deptsSorted = [...(report?.departments ?? [])].sort(
     (a: DepartmentStat, b: DepartmentStat) => (b.total ? b.clicked / b.total : 0) - (a.total ? a.clicked / a.total : 0),
   );
 
@@ -117,7 +121,7 @@ export default function CampaignDetail() {
 
   const recipientColumns: ColumnsType<RecipientResult> = [
     {
-      title: 'Email', dataIndex: 'email', key: 'email',
+      title: 'Email', dataIndex: 'email', key: 'email', width: 200, ellipsis: true,
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
         <div style={{ padding: 8 }}>
           <input
@@ -264,6 +268,7 @@ export default function CampaignDetail() {
           dataSource={recipients}
           rowKey="email"
           size="small"
+          scroll={{ x: 900 }}
           pagination={{ pageSize: 20, showSizeChanger: true }}
         />
       </Card>

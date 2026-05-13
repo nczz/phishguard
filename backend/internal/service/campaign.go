@@ -108,7 +108,7 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 	return c, nil
 }
 
-func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
+func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64, skipCooldown bool, recipientIDs []int64) error {
 	c, err := s.CampaignRepo.FindByID(tenantID, campaignID)
 	if err != nil {
 		return fmt.Errorf("find campaign: %w", err)
@@ -117,25 +117,33 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64) error {
 		return fmt.Errorf("campaign status is %s, expected draft", c.Status)
 	}
 
-	// Get recipients from campaign groups
-	groupIDs := make([]int64, len(c.Groups))
-	for i, g := range c.Groups {
-		groupIDs[i] = g.GroupID
-	}
-	recipients, err := s.RecipientRepo.FindByGroupIDs(tenantID, groupIDs)
-	if err != nil {
-		return fmt.Errorf("find recipients: %w", err)
-	}
-
-	// 1. Cooldown: exclude recipients tested in last 30 days
-	filtered := make([]model.Recipient, 0, len(recipients))
-	for _, r := range recipients {
-		recent, _ := s.ResultRepo.FindRecentByRecipientEmail(tenantID, r.Email, 30)
-		if len(recent) == 0 {
-			filtered = append(filtered, r)
+	// Get recipients: either from explicit IDs or from campaign groups
+	var recipients []model.Recipient
+	if len(recipientIDs) > 0 {
+		// Individual selection mode
+		s.CampaignRepo.DB.Where("tenant_id = ? AND id IN ?", tenantID, recipientIDs).Find(&recipients)
+	} else {
+		groupIDs := make([]int64, len(c.Groups))
+		for i, g := range c.Groups {
+			groupIDs[i] = g.GroupID
+		}
+		recipients, err = s.RecipientRepo.FindByGroupIDs(tenantID, groupIDs)
+		if err != nil {
+			return fmt.Errorf("find recipients: %w", err)
 		}
 	}
-	recipients = filtered
+
+	// 1. Cooldown: exclude recipients tested in last 30 days (unless skip_cooldown)
+	if !skipCooldown {
+		filtered := make([]model.Recipient, 0, len(recipients))
+		for _, r := range recipients {
+			recent, _ := s.ResultRepo.FindRecentByRecipientEmail(tenantID, r.Email, 30)
+			if len(recent) == 0 {
+				filtered = append(filtered, r)
+			}
+		}
+		recipients = filtered
+	}
 
 	// 2. Validate emails: exclude invalid or blocked addresses before sampling
 	validRecipients := make([]model.Recipient, 0, len(recipients))
