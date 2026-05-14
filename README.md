@@ -104,7 +104,7 @@ docker compose -f docker-compose.release.yml up -d
 
 ```
 ghcr.io/nczz/phishguard:latest    # 最新穩定版
-ghcr.io/nczz/phishguard:1.2.0     # 指定版本
+ghcr.io/nczz/phishguard:1.2.1     # 指定版本
 ```
 
 支援 `linux/amd64` 和 `linux/arm64`。

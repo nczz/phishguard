@@ -84,13 +84,25 @@ export default function RecipientGroups() {
   const handleFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
+      const buffer = e.target?.result as ArrayBuffer;
+      const bytes = new Uint8Array(buffer);
+      let text: string;
+      // UTF-8 BOM detection
+      if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        text = new TextDecoder('utf-8').decode(buffer);
+      } else {
+        text = new TextDecoder('utf-8').decode(buffer);
+        // If garbled (replacement char), try Big5 (Excel default for zh-TW)
+        if (text.includes('\uFFFD')) {
+          text = new TextDecoder('big5').decode(buffer);
+        }
+      }
       const rows = parseCSV(text);
       if (rows.length === 0) { message.error('無法解析 CSV 或沒有有效資料'); return; }
       setParsed(rows);
       setImportOpen(true);
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
     return false; // prevent auto upload
   };
 

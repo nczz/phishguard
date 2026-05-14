@@ -64,9 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!original) return;
     localStorage.setItem('token', original);
     localStorage.removeItem('original_token');
-    setToken(original);
-    setImpersonating(false);
-    navigate('/admin/dashboard');
+    window.location.href = '/admin/dashboard';
   };
 
   return (
