@@ -219,6 +219,26 @@ func (h *Handler) UpdateSMTPProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, existing)
 }
 
+func (h *Handler) DeleteSMTPProfile(c *gin.Context) {
+	tid := *middleware.GetContextTenantID(c)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	var campaigns int64
+	h.DB.Model(&model.Campaign{}).Where("tenant_id = ? AND smtp_profile_id = ?", tid, id).Count(&campaigns)
+	if campaigns > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此 SMTP 設定已被活動使用，不能刪除"})
+		return
+	}
+	if err := h.SMTPRepo.Delete(tid, id); err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
 func (h *Handler) TestSMTPProfile(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)

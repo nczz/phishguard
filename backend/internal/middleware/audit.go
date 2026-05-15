@@ -30,12 +30,6 @@ type AuditLogger interface {
 }
 
 // sensitiveKeys are fields that should be redacted from audit detail.
-var sensitiveKeys = map[string]bool{
-	"password": true, "password_hash": true, "new_password": true, "old_password": true,
-	"api_key": true, "secret_key": true, "access_key": true,
-	"token": true, "jwt_secret": true, "encrypt_key": true,
-}
-
 func AuditMiddleware(logger AuditLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
@@ -96,7 +90,7 @@ func summarizeBody(body []byte) string {
 	}
 	summary := make(map[string]any, len(raw))
 	for k, v := range raw {
-		if sensitiveKeys[strings.ToLower(k)] {
+		if isSensitiveAuditKey(k) {
 			summary[k] = "***"
 			continue
 		}
@@ -116,6 +110,25 @@ func summarizeBody(body []byte) string {
 		out = out[:1000]
 	}
 	return string(out)
+}
+
+func isSensitiveAuditKey(key string) bool {
+	k := strings.ToLower(key)
+	sensitiveParts := []string{
+		"password",
+		"api_key",
+		"secret",
+		"access_key",
+		"token",
+		"jwt",
+		"encrypt_key",
+	}
+	for _, part := range sensitiveParts {
+		if strings.Contains(k, part) {
+			return true
+		}
+	}
+	return false
 }
 
 // extractResourceID extracts numeric ID from URL path params.

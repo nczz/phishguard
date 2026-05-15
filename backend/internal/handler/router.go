@@ -75,6 +75,7 @@ func SetupRouter(h *Handler, jwtSecret string, auditLogger middleware.AuditLogge
 		api.POST("/smtp-profiles", h.CreateSMTPProfile)
 		api.POST("/smtp-profiles/:id/test", h.TestSMTPProfile)
 		api.PUT("/smtp-profiles/:id", h.UpdateSMTPProfile)
+		api.DELETE("/smtp-profiles/:id", h.DeleteSMTPProfile)
 		api.POST("/smtp-profiles/check-compliance", h.CheckMailCompliance)
 
 		api.POST("/campaigns", h.CreateCampaign)
