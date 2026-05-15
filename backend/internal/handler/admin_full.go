@@ -93,7 +93,15 @@ func (h *Handler) AdminTenantCampaigns(c *gin.Context) {
 // --- Toggle Tenant Active ---
 
 func (h *Handler) ToggleTenant(c *gin.Context) {
-	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant id"})
+		return
+	}
+	if _, err := h.TenantRepo.FindByID(id); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "tenant not found"})
+		return
+	}
 	var req struct {
 		IsActive bool `json:"is_active"`
 	}
@@ -119,6 +127,10 @@ func (h *Handler) AdminListUsers(c *gin.Context) {
 
 func (h *Handler) AdminCreateUser(c *gin.Context) {
 	tid, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	if tenant, err := h.TenantRepo.FindByID(tid); err != nil || !tenant.IsActive {
+		c.JSON(http.StatusNotFound, gin.H{"error": "tenant not found or inactive"})
+		return
+	}
 	var req struct {
 		Email    string `json:"email" binding:"required"`
 		Name     string `json:"name" binding:"required"`
@@ -127,6 +139,10 @@ func (h *Handler) AdminCreateUser(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if !isTenantUserRole(req.Role) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant user role"})
 		return
 	}
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -158,6 +174,7 @@ func (h *Handler) AdminDeleteUser(c *gin.Context) {
 }
 
 func (h *Handler) AdminUpdateUser(c *gin.Context) {
+	tid, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	uid, _ := strconv.ParseInt(c.Param("uid"), 10, 64)
 	var req struct {
 		Name     string `json:"name"`
@@ -174,10 +191,18 @@ func (h *Handler) AdminUpdateUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
+	if user.TenantID == nil || *user.TenantID != tid {
+		forbidden(c, "user does not belong to this tenant")
+		return
+	}
 	if req.Name != "" {
 		user.Name = req.Name
 	}
 	if req.Role != "" {
+		if !isTenantUserRole(req.Role) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant user role"})
+			return
+		}
 		user.Role = req.Role
 	}
 	if req.IsActive != nil {
@@ -212,6 +237,11 @@ func (h *Handler) AdminAuditLogs(c *gin.Context) {
 func (h *Handler) AdminImpersonate(c *gin.Context) {
 	tid, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	admin := middleware.GetClaims(c)
+	tenant, err := h.TenantRepo.FindByID(tid)
+	if err != nil || !tenant.IsActive {
+		c.JSON(http.StatusNotFound, gin.H{"error": "tenant not found or inactive"})
+		return
+	}
 
 	token, err := middleware.GenerateImpersonationToken(h.JWTSecret, admin.UserID, &tid, admin.Email)
 	if err != nil {
@@ -219,4 +249,8 @@ func (h *Handler) AdminImpersonate(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"token": token, "tenant_id": tid})
+}
+
+func isTenantUserRole(role string) bool {
+	return role == "tenant_admin" || role == "operator" || role == "viewer"
 }
