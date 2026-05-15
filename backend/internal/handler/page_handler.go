@@ -41,9 +41,9 @@ func (h *Handler) CreatePage(c *gin.Context) {
 	}
 	p := model.LandingPage{
 		TenantID: middleware.GetContextTenantID(c),
-		Name: req.Name, HTML: req.HTML,
+		Name:     req.Name, HTML: req.HTML,
 		CaptureCredentials: req.CaptureCredentials,
-		CaptureFields: req.CaptureFields, RedirectURL: req.RedirectURL,
+		CaptureFields:      req.CaptureFields, RedirectURL: req.RedirectURL,
 		CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	}
 	if err := h.PageRepo.Create(&p); err != nil {
@@ -78,6 +78,17 @@ func (h *Handler) DeletePage(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	var used int64
+	h.DB.Model(&model.Scenario{}).Where("(tenant_id = ? OR tenant_id IS NULL) AND page_id = ?", tid, id).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此 Landing Page 已被情境使用，不能刪除"})
+		return
+	}
+	h.DB.Model(&model.Campaign{}).Where("tenant_id = ? AND page_id = ?", tid, id).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此 Landing Page 已被活動使用，不能刪除"})
 		return
 	}
 	if err := h.PageRepo.Delete(tid, id); err != nil {

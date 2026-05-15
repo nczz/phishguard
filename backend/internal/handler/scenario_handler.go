@@ -122,6 +122,12 @@ func (h *Handler) DeleteScenario(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
+	var used int64
+	h.DB.Model(&model.Campaign{}).Where("tenant_id = ? AND scenario_id = ?", tid, id).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此情境已被活動使用，不能刪除"})
+		return
+	}
 	if err := h.ScenarioRepo.Delete(tid, id); err != nil {
 		serverError(c, err)
 		return

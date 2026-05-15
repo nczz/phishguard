@@ -143,6 +143,12 @@ func (h *Handler) DeleteRecipient(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
+	var used int64
+	h.DB.Model(&model.Result{}).Where("tenant_id = ? AND recipient_id = ?", tid, id).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此收件人已有測試結果，不能刪除；可改為停用"})
+		return
+	}
 	if err := h.RecipientRepo.DeleteRecipient(tid, id); err != nil {
 		serverError(c, err)
 		return
@@ -157,6 +163,12 @@ func (h *Handler) BatchDeleteRecipients(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	var used int64
+	h.DB.Model(&model.Result{}).Where("tenant_id = ? AND recipient_id IN ?", tid, req.IDs).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "部分收件人已有測試結果，不能刪除；可改為停用"})
 		return
 	}
 	if err := h.RecipientRepo.BatchDelete(tid, req.IDs); err != nil {

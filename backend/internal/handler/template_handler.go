@@ -90,6 +90,17 @@ func (h *Handler) DeleteTemplate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	var used int64
+	h.DB.Model(&model.Scenario{}).Where("(tenant_id = ? OR tenant_id IS NULL) AND template_id = ?", tid, id).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此模板已被情境使用，不能刪除"})
+		return
+	}
+	h.DB.Model(&model.Campaign{}).Where("tenant_id = ? AND template_id = ?", tid, id).Count(&used)
+	if used > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "此模板已被活動使用，不能刪除"})
+		return
+	}
 	if err := h.TemplateRepo.Delete(tid, id); err != nil {
 		serverError(c, err)
 		return
