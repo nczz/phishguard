@@ -5,9 +5,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func TenantMiddleware() gin.HandlerFunc {
+func TenantMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cl := GetClaims(c)
 		if cl == nil {
@@ -22,6 +23,10 @@ func TenantMiddleware() gin.HandlerFunc {
 					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid X-Tenant-ID"})
 					return
 				}
+				if !tenantIsActive(db, tid) {
+					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "tenant is inactive or not found"})
+					return
+				}
 				c.Set("tenant_id", &tid)
 			}
 			// no header → tenant_id stays nil (platform-level operation)
@@ -30,11 +35,21 @@ func TenantMiddleware() gin.HandlerFunc {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tenant assigned"})
 				return
 			}
+			if !tenantIsActive(db, *cl.TenantID) {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "tenant is inactive or not found"})
+				return
+			}
 			c.Set("tenant_id", cl.TenantID)
 		}
 
 		c.Next()
 	}
+}
+
+func tenantIsActive(db *gorm.DB, tenantID int64) bool {
+	var active bool
+	err := db.Raw("SELECT is_active FROM tenants WHERE id = ?", tenantID).Scan(&active).Error
+	return err == nil && active
 }
 
 func GetContextTenantID(c *gin.Context) *int64 {
