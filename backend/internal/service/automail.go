@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"html"
 	"time"
 
 	"github.com/nczz/phishguard/internal/mailer"
@@ -12,7 +13,7 @@ import (
 )
 
 // SendCampaignReport sends a campaign completion report email to the tenant admin.
-func SendCampaignReport(db *gorm.DB, resultRepo *repo.ResultRepo, campaign *model.Campaign, mailerSvc mailer.Mailer, fromAddr string) error {
+func SendCampaignReport(db *gorm.DB, resultRepo *repo.ResultRepo, campaign *model.Campaign, mailerSvc mailer.Mailer, fromAddr, fromName string) error {
 	stats, err := resultRepo.GetFunnelStats(campaign.TenantID, campaign.ID)
 	if err != nil {
 		return fmt.Errorf("get funnel stats: %w", err)
@@ -22,13 +23,16 @@ func SendCampaignReport(db *gorm.DB, resultRepo *repo.ResultRepo, campaign *mode
 
 	// Find tenant admin email
 	var admin model.User
-	if err := db.Where("tenant_id = ? AND role = ?", campaign.TenantID, "tenant_admin").First(&admin).Error; err != nil {
+	if err := db.Where("tenant_id = ? AND role = ? AND is_active = ?", campaign.TenantID, "tenant_admin", true).First(&admin).Error; err != nil {
 		return fmt.Errorf("find tenant admin: %w", err)
+	}
+	if fromName == "" {
+		fromName = "PhishGuard"
 	}
 
 	msg := &mailer.Message{
 		From:     fromAddr,
-		FromName: "PhishGuard",
+		FromName: fromName,
 		To:       admin.Email,
 		Subject:  "[PhishGuard] Campaign Report: " + campaign.Name,
 		HTMLBody: html,
@@ -65,7 +69,7 @@ func buildReportHTML(c *model.Campaign, s *repo.FunnelStats) string {
 </table>
 <p style="margin-top:16px;color:#666">Login to PhishGuard for full report with department breakdown and recipient details</p>
 </body></html>`,
-		c.Name, completed,
+		html.EscapeString(c.Name), completed,
 		s.Sent, pct(s.Sent),
 		s.Opened, pct(s.Opened),
 		s.Clicked, pct(s.Clicked),

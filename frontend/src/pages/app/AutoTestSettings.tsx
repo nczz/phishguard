@@ -30,10 +30,14 @@ export default function AutoTestSettings() {
     setSaving(true);
     try {
       const { is_enabled, frequency, target_mode, sample_percent } = values;
-      await api.put('/auto-test', { is_enabled, frequency, target_mode, sample_percent });
+      const cfg = await api.put<AutoTestConfig>('/auto-test', { is_enabled, frequency, target_mode, sample_percent });
+      form.setFieldsValue(cfg);
       message.success('已儲存');
-    } catch {
-      message.error('儲存失敗');
+    } catch (err) {
+      const msg = err && typeof err === 'object' && 'displayMessage' in err
+        ? (err as { displayMessage: string }).displayMessage
+        : '儲存失敗';
+      message.error(msg);
     }
     setSaving(false);
   };

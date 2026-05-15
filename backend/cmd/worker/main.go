@@ -400,7 +400,7 @@ func sendCompletionReport(database *gorm.DB, cfg *config.Config, resultRepo *rep
 	if err != nil {
 		return
 	}
-	if err := service.SendCampaignReport(database, resultRepo, campaign, m, smtp.FromAddress); err != nil {
+	if err := service.SendCampaignReport(database, resultRepo, campaign, m, smtp.FromAddress, smtp.FromName); err != nil {
 		log.Printf("campaign %d: failed to send report: %v", campaign.ID, err)
 	} else {
 		log.Printf("campaign %d: report sent to tenant admin", campaign.ID)

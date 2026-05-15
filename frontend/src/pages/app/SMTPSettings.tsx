@@ -22,13 +22,13 @@ export default function SMTPSettings() {
   interface CompResult { domain: string; score: number; checks: CompCheck[]; }
   const [compResult, setCompResult] = useState<CompResult | null>(null);
   const [compLoading, setCompLoading] = useState(false);
-  const [compProfileId, setCompProfileId] = useState<number | null>(null);
+  const [compProfileId, setCompProfileId] = useState<string | null>(null);
 
   const runCompliance = async () => {
     if (!compProfileId) { message.error('請選擇 SMTP 設定'); return; }
     setCompLoading(true);
     try {
-      const res = await api.post<CompResult>('/smtp-profiles/check-compliance', { smtp_profile_id: compProfileId });
+      const res = await api.post<CompResult>('/smtp-profiles/check-compliance', { smtp_profile_id: Number(compProfileId) });
       setCompResult(res);
     } catch { message.error('檢測失敗'); }
     setCompLoading(false);

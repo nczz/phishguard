@@ -31,6 +31,12 @@ func runOneAutoTest(db *gorm.DB, campaignSvc *CampaignService, cfg *model.AutoTe
 	if err := db.First(&tenant, cfg.TenantID).Error; err != nil {
 		return fmt.Errorf("tenant %d not found: %w", cfg.TenantID, err)
 	}
+	if !tenant.IsActive {
+		return fmt.Errorf("tenant %d is inactive", cfg.TenantID)
+	}
+	if !GetEffectiveLimits(&tenant).AutoTest {
+		return fmt.Errorf("tenant %d plan does not allow auto tests", cfg.TenantID)
+	}
 
 	// Random active scenario
 	var scenario model.Scenario
@@ -66,7 +72,9 @@ func runOneAutoTest(db *gorm.DB, campaignSvc *CampaignService, cfg *model.AutoTe
 
 	scenarioID := scenario.ID
 	selMode := cfg.TargetMode
-	if selMode == "random" { selMode = "sample" }
+	if selMode == "random" {
+		selMode = "sample"
+	}
 
 	campaign, err := campaignSvc.CreateCampaign(cfg.TenantID, &CreateCampaignRequest{
 		Name:          fmt.Sprintf("Auto Test - %s", time.Now().UTC().Format("2006-01-02")),

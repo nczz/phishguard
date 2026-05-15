@@ -11,10 +11,10 @@ import (
 )
 
 type ComplianceCheck struct {
-	Name    string `json:"name"`
-	Status  string `json:"status"` // pass / warn / fail
-	Detail  string `json:"detail"`
-	Fix     string `json:"fix,omitempty"`
+	Name   string `json:"name"`
+	Status string `json:"status"` // pass / warn / fail
+	Detail string `json:"detail"`
+	Fix    string `json:"fix,omitempty"`
 }
 
 type ComplianceResult struct {
@@ -44,7 +44,7 @@ func (h *Handler) CheckMailCompliance(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "SMTP profile from_address is invalid"})
 		return
 	}
-	domain := parts[1]
+	domain := strings.ToLower(strings.TrimSpace(parts[1]))
 
 	checks := []ComplianceCheck{}
 	score := 100
@@ -54,6 +54,9 @@ func (h *Handler) CheckMailCompliance(c *gin.Context) {
 
 	// 2. DMARC
 	checks = append(checks, checkDMARC(domain, &score))
+
+	// 3. DKIM
+	checks = append(checks, checkDKIM(profile.MailerType))
 
 	// 4. MX record
 	checks = append(checks, checkMX(domain, &score))
@@ -67,7 +70,7 @@ func (h *Handler) CheckMailCompliance(c *gin.Context) {
 	checks = append(checks, ComplianceCheck{
 		Name:   "發信速率控制",
 		Status: "pass",
-		Detail: "系統已內建速率限制（每秒最多 10 封），避免觸發收件伺服器的速率保護",
+		Detail: "系統已依發信服務自動限速：" + providerRateDetail(profile.MailerType),
 	})
 
 	// 7. List-Unsubscribe header
@@ -131,6 +134,32 @@ func checkDMARC(domain string, score *int) ComplianceCheck {
 	*score -= 20
 	return ComplianceCheck{Name: "DMARC 記錄", Status: "fail", Detail: "未找到 DMARC 記錄",
 		Fix: fmt.Sprintf("在 DNS 加入 TXT 記錄 _dmarc.%s：v=DMARC1; p=quarantine; rua=mailto:dmarc@%s", domain, domain)}
+}
+
+func checkDKIM(mailerType string) ComplianceCheck {
+	detail := "DKIM 需要依發信服務提供的 selector 查詢，系統無法只從寄件域名準確判斷。"
+	switch mailerType {
+	case "mailgun":
+		return ComplianceCheck{Name: "DKIM 記錄", Status: "warn", Detail: detail,
+			Fix: "請在 Mailgun Domain 設定頁確認 DKIM 狀態為 Verified"}
+	case "ses":
+		return ComplianceCheck{Name: "DKIM 記錄", Status: "warn", Detail: detail,
+			Fix: "請在 AWS SES identity 設定頁啟用 Easy DKIM，並確認三筆 CNAME 已驗證"}
+	default:
+		return ComplianceCheck{Name: "DKIM 記錄", Status: "warn", Detail: detail,
+			Fix: "請向 SMTP 供應商確認 DKIM selector，並在 DNS 加入對應 TXT/CNAME 記錄"}
+	}
+}
+
+func providerRateDetail(mailerType string) string {
+	switch mailerType {
+	case "ses":
+		return "SES 12/sec"
+	case "mailgun":
+		return "Mailgun 40/sec"
+	default:
+		return "SMTP 3/sec"
+	}
 }
 
 func checkMX(domain string, score *int) ComplianceCheck {

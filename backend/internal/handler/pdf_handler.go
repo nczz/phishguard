@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"html"
 	"net/http"
 	"sort"
 	"strconv"
@@ -29,13 +30,19 @@ func (h *Handler) ExportCampaignPDFReal(c *gin.Context) {
 	sort.Slice(depts, func(i, j int) bool {
 		ri := float64(0)
 		rj := float64(0)
-		if depts[i].Total > 0 { ri = float64(depts[i].Clicked) / float64(depts[i].Total) }
-		if depts[j].Total > 0 { rj = float64(depts[j].Clicked) / float64(depts[j].Total) }
+		if depts[i].Total > 0 {
+			ri = float64(depts[i].Clicked) / float64(depts[i].Total)
+		}
+		if depts[j].Total > 0 {
+			rj = float64(depts[j].Clicked) / float64(depts[j].Total)
+		}
 		return ri > rj
 	})
 
 	pct := func(n int64) string {
-		if funnel.Total == 0 { return "0%" }
+		if funnel.Total == 0 {
+			return "0%"
+		}
 		return fmt.Sprintf("%.1f%%", float64(n)/float64(funnel.Total)*100)
 	}
 
@@ -48,9 +55,13 @@ func (h *Handler) ExportCampaignPDFReal(c *gin.Context) {
 	var deptRows strings.Builder
 	for _, d := range depts {
 		rate := 0.0
-		if d.Total > 0 { rate = float64(d.Clicked) / float64(d.Total) * 100 }
-		deptRows.WriteString(fmt.Sprintf(`<tr><td>%s</td><td>%d</td><td>%d</td><td>%.1f%%</td></tr>`, d.Department, d.Total, d.Clicked, rate))
+		if d.Total > 0 {
+			rate = float64(d.Clicked) / float64(d.Total) * 100
+		}
+		deptRows.WriteString(fmt.Sprintf(`<tr><td>%s</td><td>%d</td><td>%d</td><td>%.1f%%</td></tr>`, html.EscapeString(d.Department), d.Total, d.Clicked, rate))
 	}
+	campaignName := html.EscapeString(campaign.Name)
+	campaignStatus := html.EscapeString(campaign.Status)
 
 	html := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s — 釣魚測試報告</title>
 <style>
@@ -97,9 +108,9 @@ h2 { color: #1677ff; border-bottom: 2px solid #1677ff; padding-bottom: 6px; marg
 
 <p class="footer">由 PhishGuard 釣魚模擬測試平台產生 · %s</p>
 </body></html>`,
-		campaign.Name,
+		campaignName,
 		time.Now().Format("2006-01-02"),
-		campaign.Name, campaign.Status, launched, funnel.Total,
+		campaignName, campaignStatus, launched, funnel.Total,
 		funnel.Sent, pct(funnel.Sent), barWidth(funnel.Sent, funnel.Total),
 		funnel.Opened, pct(funnel.Opened), barWidth(funnel.Opened, funnel.Total),
 		funnel.Clicked, pct(funnel.Clicked), barWidth(funnel.Clicked, funnel.Total),
@@ -114,8 +125,12 @@ h2 { color: #1677ff; border-bottom: 2px solid #1677ff; padding-bottom: 6px; marg
 }
 
 func barWidth(n, total int64) int {
-	if total == 0 { return 0 }
+	if total == 0 {
+		return 0
+	}
 	w := int(float64(n) / float64(total) * 300)
-	if w < 2 && n > 0 { w = 2 }
+	if w < 2 && n > 0 {
+		w = 2
+	}
 	return w
 }

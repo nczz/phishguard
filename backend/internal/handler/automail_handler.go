@@ -41,24 +41,36 @@ func (h *Handler) SendCampaignReportEmail(c *gin.Context) {
 		"region":   profile.SESRegion,
 	}
 	if pw, err := crypto.Decrypt(h.EncryptKey, profile.PasswordEnc); err != nil {
-		serverError(c, err); return
-	} else { config["password"] = pw }
+		serverError(c, err)
+		return
+	} else {
+		config["password"] = pw
+	}
 	if v, err := crypto.Decrypt(h.EncryptKey, profile.MailgunAPIKey); err != nil {
-		serverError(c, err); return
-	} else { config["api_key"] = v }
+		serverError(c, err)
+		return
+	} else {
+		config["api_key"] = v
+	}
 	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESAccessKey); err != nil {
-		serverError(c, err); return
-	} else { config["access_key"] = v }
+		serverError(c, err)
+		return
+	} else {
+		config["access_key"] = v
+	}
 	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESSecretKey); err != nil {
-		serverError(c, err); return
-	} else { config["secret_key"] = v }
+		serverError(c, err)
+		return
+	} else {
+		config["secret_key"] = v
+	}
 	m, err := mailer.NewMailer(profile.MailerType, config)
 	if err != nil {
 		serverError(c, err)
 		return
 	}
 
-	if err := service.SendCampaignReport(h.DB, h.ResultRepo, campaign, m, profile.FromAddress); err != nil {
+	if err := service.SendCampaignReport(h.DB, h.ResultRepo, campaign, m, profile.FromAddress, profile.FromName); err != nil {
 		serverError(c, err)
 		return
 	}
