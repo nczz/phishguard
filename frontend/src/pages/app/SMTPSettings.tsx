@@ -112,7 +112,7 @@ export default function SMTPSettings() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={{ pageSize: 10 }} />
 
       <Modal title={editing ? '編輯 SMTP 設定' : '新增 SMTP 設定'} open={open} onOk={() => form.submit()} onCancel={() => setOpen(false)} width={520} destroyOnHidden>
-        <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ mailer_type: 'smtp', port: 587, tls: true }}>
+        <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ mailer_type: 'smtp', port: 587, tls_required: true }}>
           <Form.Item name="name" label="名稱" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="mailer_type" label={<FieldHelp label="發信方式" tip={tips.smtpType} guideAnchor="smtp" />}>
             <Radio.Group>
@@ -128,7 +128,7 @@ export default function SMTPSettings() {
               <Form.Item name="port" label="Port" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} /></Form.Item>
               <Form.Item name="username" label="Username"><Input /></Form.Item>
               <Form.Item name="password" label="Password"><Input.Password /></Form.Item>
-              <Form.Item name="tls" valuePropName="checked"><Checkbox>啟用 TLS</Checkbox></Form.Item>
+              <Form.Item name="tls_required" valuePropName="checked"><Checkbox>啟用 TLS</Checkbox></Form.Item>
             </>
           )}
           {mailerType === 'mailgun' && (

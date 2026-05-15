@@ -61,9 +61,11 @@ export default function TemplateList() {
       render: (_: unknown, r: EmailTemplate) => (
         <Space>
           {r.tenant_id && <Button size="small" onClick={() => openDrawer(r)}>編輯</Button>}
-          <Popconfirm title="確定刪除？" onConfirm={() => onDelete(r.id)}>
-            <Button size="small" danger>刪除</Button>
-          </Popconfirm>
+          {r.tenant_id && (
+            <Popconfirm title="確定刪除？" onConfirm={() => onDelete(r.id)}>
+              <Button size="small" danger>刪除</Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

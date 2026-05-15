@@ -46,9 +46,24 @@ func (h *Handler) CreateSMTPProfile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if req.MailerType == "" {
+		req.MailerType = "smtp"
+	}
 	// Validate from_address
 	if !strings.Contains(req.FromAddress, "@") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "寄件地址必須是完整的 email 格式（如 noreply@yourdomain.com）"})
+		return
+	}
+	if req.MailerType == "smtp" && (req.Host == "" || req.Port == nil) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "SMTP 設定必須包含 Host 和 Port"})
+		return
+	}
+	if req.MailerType == "mailgun" && (req.MailgunDomain == "" || req.MailgunAPIKey == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mailgun 設定必須包含 Domain 和 API Key"})
+		return
+	}
+	if req.MailerType == "ses" && (req.SESRegion == "" || req.SESAccessKey == "" || req.SESSecretKey == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "SES 設定必須包含 Region、Access Key 和 Secret Key"})
 		return
 	}
 	if req.MailerType == "mailgun" && req.MailgunDomain != "" {
@@ -127,35 +142,74 @@ func (h *Handler) UpdateSMTPProfile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "寄件地址必須是完整的 email 格式"})
 		return
 	}
-	if req.Name != "" { existing.Name = req.Name }
-	if req.MailerType != "" { existing.MailerType = req.MailerType }
-	if req.Host != "" { existing.Host = req.Host }
-	if req.Port != nil { existing.Port = req.Port }
-	if req.Username != "" { existing.Username = req.Username }
+	if req.Name != "" {
+		existing.Name = req.Name
+	}
+	if req.MailerType != "" {
+		existing.MailerType = req.MailerType
+	}
+	if req.Host != "" {
+		existing.Host = req.Host
+	}
+	if req.Port != nil {
+		existing.Port = req.Port
+	}
+	if req.Username != "" {
+		existing.Username = req.Username
+	}
 	if req.Password != "" {
 		enc, err := crypto.Encrypt(h.EncryptKey, req.Password)
-		if err != nil { serverError(c, err); return }
+		if err != nil {
+			serverError(c, err)
+			return
+		}
 		existing.PasswordEnc = enc
 	}
-	if req.FromAddress != "" { existing.FromAddress = req.FromAddress }
-	if req.FromName != "" { existing.FromName = req.FromName }
-	if req.TLSRequired != nil { existing.TLSRequired = *req.TLSRequired }
-	if req.MailgunDomain != "" { existing.MailgunDomain = req.MailgunDomain }
+	if req.FromAddress != "" {
+		existing.FromAddress = req.FromAddress
+	}
+	if req.FromName != "" {
+		existing.FromName = req.FromName
+	}
+	if req.TLSRequired != nil {
+		existing.TLSRequired = *req.TLSRequired
+	}
+	if req.MailgunDomain != "" {
+		existing.MailgunDomain = req.MailgunDomain
+	}
 	if req.MailgunAPIKey != "" {
 		enc, err := crypto.Encrypt(h.EncryptKey, req.MailgunAPIKey)
-		if err != nil { serverError(c, err); return }
+		if err != nil {
+			serverError(c, err)
+			return
+		}
 		existing.MailgunAPIKey = enc
 	}
-	if req.SESRegion != "" { existing.SESRegion = req.SESRegion }
+	if req.SESRegion != "" {
+		existing.SESRegion = req.SESRegion
+	}
 	if req.SESAccessKey != "" {
 		enc, err := crypto.Encrypt(h.EncryptKey, req.SESAccessKey)
-		if err != nil { serverError(c, err); return }
+		if err != nil {
+			serverError(c, err)
+			return
+		}
 		existing.SESAccessKey = enc
 	}
 	if req.SESSecretKey != "" {
 		enc, err := crypto.Encrypt(h.EncryptKey, req.SESSecretKey)
-		if err != nil { serverError(c, err); return }
+		if err != nil {
+			serverError(c, err)
+			return
+		}
 		existing.SESSecretKey = enc
+	}
+	if existing.MailerType == "mailgun" && existing.MailgunDomain != "" {
+		fromDomain := existing.FromAddress[strings.LastIndex(existing.FromAddress, "@")+1:]
+		if fromDomain != existing.MailgunDomain {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("寄件地址的域名（%s）必須與 Mailgun Domain（%s）一致", fromDomain, existing.MailgunDomain)})
+			return
+		}
 	}
 
 	if err := h.SMTPRepo.Update(tid, existing); err != nil {
@@ -194,17 +248,29 @@ func (h *Handler) TestSMTPProfile(c *gin.Context) {
 		"region":   profile.SESRegion,
 	}
 	if pw, err := crypto.Decrypt(h.EncryptKey, profile.PasswordEnc); err != nil {
-		serverError(c, err); return
-	} else { config["password"] = pw }
+		serverError(c, err)
+		return
+	} else {
+		config["password"] = pw
+	}
 	if v, err := crypto.Decrypt(h.EncryptKey, profile.MailgunAPIKey); err != nil {
-		serverError(c, err); return
-	} else { config["api_key"] = v }
+		serverError(c, err)
+		return
+	} else {
+		config["api_key"] = v
+	}
 	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESAccessKey); err != nil {
-		serverError(c, err); return
-	} else { config["access_key"] = v }
+		serverError(c, err)
+		return
+	} else {
+		config["access_key"] = v
+	}
 	if v, err := crypto.Decrypt(h.EncryptKey, profile.SESSecretKey); err != nil {
-		serverError(c, err); return
-	} else { config["secret_key"] = v }
+		serverError(c, err)
+		return
+	} else {
+		config["secret_key"] = v
+	}
 	m, err := mailer.NewMailer(profile.MailerType, config)
 	if err != nil {
 		serverError(c, err)

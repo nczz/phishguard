@@ -41,15 +41,36 @@ func (h *Handler) CreateScenario(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	tid := *middleware.GetContextTenantID(c)
+	if req.TemplateID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "template_id is required"})
+		return
+	}
+	if _, err := h.TemplateRepo.FindByID(tid, *req.TemplateID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "template not found"})
+		return
+	}
+	if req.PageID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "page_id is required"})
+		return
+	}
+	if _, err := h.PageRepo.FindByID(tid, *req.PageID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "page not found"})
+		return
+	}
 	s := model.Scenario{
 		TenantID: middleware.GetContextTenantID(c),
-		Name: req.Name, Category: req.Category, Difficulty: req.Difficulty,
+		Name:     req.Name, Category: req.Category, Difficulty: req.Difficulty,
 		Language: req.Language, TemplateID: req.TemplateID, PageID: req.PageID,
 		EducationHTML: req.EducationHTML, IsActive: true,
 		CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	}
-	if s.Language == "" { s.Language = "zh-TW" }
-	if s.Difficulty == 0 { s.Difficulty = 2 }
+	if s.Language == "" {
+		s.Language = "zh-TW"
+	}
+	if s.Difficulty == 0 {
+		s.Difficulty = 2
+	}
 	if err := h.ScenarioRepo.Create(&s); err != nil {
 		serverError(c, err)
 		return
@@ -71,6 +92,22 @@ func (h *Handler) UpdateScenario(c *gin.Context) {
 	}
 	s.ID = id
 	s.TenantID = &tid
+	if s.TemplateID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "template_id is required"})
+		return
+	}
+	if _, err := h.TemplateRepo.FindByID(tid, *s.TemplateID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "template not found"})
+		return
+	}
+	if s.PageID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "page_id is required"})
+		return
+	}
+	if _, err := h.PageRepo.FindByID(tid, *s.PageID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "page not found"})
+		return
+	}
 	if err := h.ScenarioRepo.Update(tid, &s); err != nil {
 		serverError(c, err)
 		return

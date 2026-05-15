@@ -84,6 +84,7 @@ export interface SMTPProfile {
   port: number;
   from_address: string;
   from_name: string;
+  tls_required: boolean;
 }
 
 export interface Campaign {
