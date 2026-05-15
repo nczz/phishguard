@@ -10,8 +10,8 @@ export default function SeedData() {
   const seed = async () => {
     setLoading(true);
     try {
-      await api.post('/seed-sample-data');
-      message.success('範例資料已匯入！');
+      const res = await api.post<{ message?: string }>('/seed-sample-data');
+      message.success(res.message || '範例資料已匯入！');
       setDone(true);
     } catch { message.error('匯入失敗，可能已存在相同資料'); }
     setLoading(false);
@@ -27,7 +27,7 @@ export default function SeedData() {
         <Row gutter={[16, 12]}>
           {[
             { icon: '✉️', title: '5 個信件模板', desc: '密碼到期、包裹通知、薪資單、資安警告、發票確認' },
-            { icon: '🖥️', title: '2 個 Landing Page', desc: '仿登入頁面、確認資訊頁面（含表單擷取）' },
+            { icon: '🖥️', title: '5 個 Landing Page', desc: '仿登入頁面、確認資訊頁面（含表單擷取）' },
             { icon: '📋', title: '5 個釣魚情境', desc: '模板 + Landing Page + 教育頁完整打包' },
             { icon: '👥', title: '5 位範例收件人', desc: '分佈在 4 個部門，可直接用於測試' },
             { icon: '📚', title: '教育頁面', desc: '員工中招後看到的資安教育內容' },
@@ -42,7 +42,7 @@ export default function SeedData() {
           ))}
         </Row>
 
-        <Alert type="info" title="提示" description="匯入的資料會新增到現有資料中，不會覆蓋已有的模板或情境。可多次匯入（但會產生重複資料）。" showIcon style={{ margin: '16px 0' }} />
+        <Alert type="info" title="提示" description="匯入的資料會新增到現有資料中，不會覆蓋已有的模板或情境；若範例資料已存在，系統會略過重複匯入。" showIcon style={{ margin: '16px 0' }} />
 
         {done ? (
           <Alert type="success" title="匯入完成" description="範例資料已成功匯入！前往情境庫或模板管理查看。" showIcon icon={<CheckCircleOutlined />} />

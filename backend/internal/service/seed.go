@@ -1,11 +1,23 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/nczz/phishguard/internal/model"
 	"gorm.io/gorm"
 )
 
+var ErrSeedDataExists = errors.New("seed data already exists")
+
 func SeedTenantData(db *gorm.DB, tenantID int64) error {
+	var existing int64
+	if err := db.Model(&model.RecipientGroup{}).Where("tenant_id = ? AND name = ?", tenantID, "範例員工").Count(&existing).Error; err != nil {
+		return err
+	}
+	if existing > 0 {
+		return ErrSeedDataExists
+	}
+
 	templates := seedTemplates(tenantID)
 	for i := range templates {
 		if err := db.Create(&templates[i]).Error; err != nil {

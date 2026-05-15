@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,10 @@ import (
 func (h *Handler) SeedSampleData(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 	if err := service.SeedTenantData(h.DB, tid); err != nil {
+		if errors.Is(err, service.ErrSeedDataExists) {
+			c.JSON(http.StatusOK, gin.H{"message": "範例資料已存在，未重複匯入"})
+			return
+		}
 		serverError(c, err)
 		return
 	}

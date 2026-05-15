@@ -41,19 +41,6 @@ func (h *Handler) CreateRecipientGroup(c *gin.Context) {
 func (h *Handler) ImportRecipients(c *gin.Context) {
 	tid := *middleware.GetContextTenantID(c)
 
-	// Plan limit check: max recipients
-	var tenant model.Tenant
-	if err := h.DB.First(&tenant, tid).Error; err == nil {
-		limits := service.GetEffectiveLimits(&tenant)
-		if limits.MaxRecipients > 0 {
-			current, _ := h.RecipientRepo.CountByTenant(tid)
-			if current >= int64(limits.MaxRecipients) {
-				c.JSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("已達收件人上限 (%d 人)，請升級方案或聯繫管理員調整", limits.MaxRecipients)})
-				return
-			}
-		}
-	}
-
 	var req struct {
 		GroupID    int64 `json:"group_id" binding:"required"`
 		Sync       bool  `json:"sync"`
@@ -93,6 +80,28 @@ func (h *Handler) ImportRecipients(c *gin.Context) {
 			Position:   r.Position,
 		})
 	}
+
+	var tenant model.Tenant
+	if err := h.DB.First(&tenant, tid).Error; err == nil {
+		limits := service.GetEffectiveLimits(&tenant)
+		if limits.MaxRecipients > 0 {
+			current, _ := h.RecipientRepo.CountByTenant(tid)
+			emails := make([]string, 0, len(recipients))
+			for _, r := range recipients {
+				emails = append(emails, r.Email)
+			}
+			var existing int64
+			if len(emails) > 0 {
+				h.DB.Model(&model.Recipient{}).Where("tenant_id = ? AND email IN ?", tid, emails).Count(&existing)
+			}
+			toCreate := int64(len(recipients)) - existing
+			if current+toCreate > int64(limits.MaxRecipients) {
+				c.JSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("匯入後將超過收件人上限 (%d 人)，目前 %d 人，本次新增 %d 人", limits.MaxRecipients, current, toCreate)})
+				return
+			}
+		}
+	}
+
 	created, updated, deactivated, err := h.RecipientRepo.UpsertRecipients(tid, req.GroupID, recipients, req.Sync)
 	if err != nil {
 		serverError(c, err)

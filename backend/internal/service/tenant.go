@@ -19,14 +19,20 @@ type TenantService struct {
 }
 
 func (s *TenantService) Create(name, slug, plan string) (*model.Tenant, error) {
-	t := &model.Tenant{Name: name, Slug: slug, Plan: plan, IsActive: true, MaxRecipients: 100}
+	if plan == "" {
+		plan = "free"
+	}
+	t := &model.Tenant{Name: name, Slug: slug, Plan: plan, IsActive: true}
 	return t, s.TenantRepo.Create(t)
 }
 
 func (s *TenantService) CreateWithAdmin(name, slug, plan, adminEmail, adminPassword string) (*model.Tenant, error) {
+	if plan == "" {
+		plan = "free"
+	}
 	var tenant *model.Tenant
 	err := s.DB.Transaction(func(tx *gorm.DB) error {
-		t := &model.Tenant{Name: name, Slug: slug, Plan: plan, IsActive: true, MaxRecipients: 100}
+		t := &model.Tenant{Name: name, Slug: slug, Plan: plan, IsActive: true}
 		if err := tx.Create(t).Error; err != nil {
 			return err
 		}

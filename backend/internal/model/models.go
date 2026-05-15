@@ -13,28 +13,28 @@ const (
 
 // Event types
 const (
-	EventSent      = "sent"
-	EventOpened    = "opened"
-	EventClicked   = "clicked"
-	EventSubmitted   = "submitted"
-	EventReported    = "reported"
-	EventDownloaded  = "downloaded"
-	EventError       = "error"
+	EventSent       = "sent"
+	EventOpened     = "opened"
+	EventClicked    = "clicked"
+	EventSubmitted  = "submitted"
+	EventReported   = "reported"
+	EventDownloaded = "downloaded"
+	EventError      = "error"
 )
 
 // Result intermediate status (used by worker state machine)
 const ResultStatusSending = "sending"
 
 type Tenant struct {
-	ID                  int64  `gorm:"primaryKey" json:"id"`
-	Name                string `gorm:"size:255;not null" json:"name"`
-	Slug                string `gorm:"size:100;uniqueIndex;not null" json:"slug"`
-	Plan                string `gorm:"size:50;not null;default:free" json:"plan"`
-	MaxRecipients       int    `gorm:"not null;default:100" json:"max_recipients"`
-	MaxCampaignsPerYear *int   `json:"max_campaigns_per_year"`
-	MaxEmailsPerMonth   *int   `json:"max_emails_per_month"`
-	IsActive            bool   `gorm:"not null;default:true" json:"is_active"`
-	Config              string `gorm:"type:text" json:"config"`
+	ID                  int64     `gorm:"primaryKey" json:"id"`
+	Name                string    `gorm:"size:255;not null" json:"name"`
+	Slug                string    `gorm:"size:100;uniqueIndex;not null" json:"slug"`
+	Plan                string    `gorm:"size:50;not null;default:free" json:"plan"`
+	MaxRecipients       int       `gorm:"not null;default:0" json:"max_recipients"`
+	MaxCampaignsPerYear *int      `json:"max_campaigns_per_year"`
+	MaxEmailsPerMonth   *int      `json:"max_emails_per_month"`
+	IsActive            bool      `gorm:"not null;default:true" json:"is_active"`
+	Config              string    `gorm:"type:text" json:"config"`
 	CreatedAt           time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt           time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
@@ -142,18 +142,18 @@ type SMTPProfile struct {
 }
 
 type Campaign struct {
-	ID            int64           `gorm:"primaryKey" json:"id"`
-	TenantID      int64           `gorm:"not null;index" json:"tenant_id"`
-	Name          string          `gorm:"size:255;not null" json:"name"`
-	Status        string          `gorm:"size:20;not null;default:draft" json:"status"`
-	ScenarioID    *int64          `json:"scenario_id"`
-	TemplateID    *int64          `json:"template_id"`
-	PageID        *int64          `json:"page_id"`
-	SMTPProfileID int64           `gorm:"not null" json:"smtp_profile_id"`
-	PhishURL      string          `gorm:"size:500" json:"phish_url"`
-	SelectionMode string          `gorm:"size:20;not null;default:all" json:"selection_mode"`
-	SamplePercent int             `gorm:"not null;default:100" json:"sample_percent"`
-	Departments   []string        `gorm:"serializer:json;type:text" json:"departments"`
+	ID               int64           `gorm:"primaryKey" json:"id"`
+	TenantID         int64           `gorm:"not null;index" json:"tenant_id"`
+	Name             string          `gorm:"size:255;not null" json:"name"`
+	Status           string          `gorm:"size:20;not null;default:draft" json:"status"`
+	ScenarioID       *int64          `json:"scenario_id"`
+	TemplateID       *int64          `json:"template_id"`
+	PageID           *int64          `json:"page_id"`
+	SMTPProfileID    int64           `gorm:"not null" json:"smtp_profile_id"`
+	PhishURL         string          `gorm:"size:500" json:"phish_url"`
+	SelectionMode    string          `gorm:"size:20;not null;default:all" json:"selection_mode"`
+	SamplePercent    int             `gorm:"not null;default:100" json:"sample_percent"`
+	Departments      []string        `gorm:"serializer:json;type:text" json:"departments"`
 	LaunchedAt       *time.Time      `json:"launched_at"`
 	SendBy           *time.Time      `json:"send_by"`
 	ScheduleStart    *time.Time      `json:"schedule_start"`
@@ -161,11 +161,11 @@ type Campaign struct {
 	SkipWeekends     bool            `gorm:"not null;default:false" json:"skip_weekends"`
 	Timezone         string          `gorm:"size:50;not null;default:UTC" json:"timezone"`
 	CompletedAt      *time.Time      `json:"completed_at"`
-	CreatedBy     *int64          `json:"created_by"`
-	Results       []Result        `gorm:"foreignKey:CampaignID" json:"results,omitempty"`
-	Groups        []CampaignGroup `gorm:"foreignKey:CampaignID" json:"groups,omitempty"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
+	CreatedBy        *int64          `json:"created_by"`
+	Results          []Result        `gorm:"foreignKey:CampaignID" json:"results,omitempty"`
+	Groups           []CampaignGroup `gorm:"foreignKey:CampaignID" json:"groups,omitempty"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
 }
 
 type CampaignGroup struct {
@@ -174,22 +174,22 @@ type CampaignGroup struct {
 }
 
 type Result struct {
-	ID          int64      `gorm:"primaryKey" json:"id"`
-	CampaignID  int64      `gorm:"not null;index" json:"campaign_id"`
-	TenantID    int64      `gorm:"not null;index" json:"tenant_id"`
-	RecipientID int64      `gorm:"not null" json:"recipient_id"`
-	RID         string     `gorm:"column:rid;size:36;uniqueIndex;not null" json:"rid"`
-	Status      string     `gorm:"size:20;not null;default:pending" json:"status"`
-	SendDate    *time.Time `json:"send_date"`
-	SentAt      *time.Time `json:"sent_at"`
-	OpenedAt    *time.Time `json:"opened_at"`
+	ID           int64      `gorm:"primaryKey" json:"id"`
+	CampaignID   int64      `gorm:"not null;index" json:"campaign_id"`
+	TenantID     int64      `gorm:"not null;index" json:"tenant_id"`
+	RecipientID  int64      `gorm:"not null" json:"recipient_id"`
+	RID          string     `gorm:"column:rid;size:36;uniqueIndex;not null" json:"rid"`
+	Status       string     `gorm:"size:20;not null;default:pending" json:"status"`
+	SendDate     *time.Time `json:"send_date"`
+	SentAt       *time.Time `json:"sent_at"`
+	OpenedAt     *time.Time `json:"opened_at"`
 	ClickedAt    *time.Time `json:"clicked_at"`
 	DownloadedAt *time.Time `json:"downloaded_at"`
 	SubmittedAt  *time.Time `json:"submitted_at"`
-	ReportedAt  *time.Time `json:"reported_at"`
-	ErrorDetail string     `gorm:"type:text" json:"error_detail"`
-	Recipient   *Recipient `gorm:"foreignKey:RecipientID" json:"recipient,omitempty"`
-	Events      []Event    `gorm:"foreignKey:ResultID" json:"events,omitempty"`
+	ReportedAt   *time.Time `json:"reported_at"`
+	ErrorDetail  string     `gorm:"type:text" json:"error_detail"`
+	Recipient    *Recipient `gorm:"foreignKey:RecipientID" json:"recipient,omitempty"`
+	Events       []Event    `gorm:"foreignKey:ResultID" json:"events,omitempty"`
 }
 
 type Event struct {
