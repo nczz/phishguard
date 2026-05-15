@@ -78,7 +78,7 @@ func (h *Handler) CampaignRecipients(c *gin.Context) {
 
 	list := make([]RecipientResult, 0, len(results))
 	for _, r := range results {
-		rr := RecipientResult{Status: r.Status, ErrorDetail: r.ErrorDetail, SentAt: r.SentAt, OpenedAt: r.OpenedAt, ClickedAt: r.ClickedAt, SubmittedAt: r.SubmittedAt, ReportedAt: r.ReportedAt}
+		rr := RecipientResult{Status: bestStatus(r), ErrorDetail: r.ErrorDetail, SentAt: r.SentAt, OpenedAt: r.OpenedAt, ClickedAt: r.ClickedAt, DownloadedAt: r.DownloadedAt, SubmittedAt: r.SubmittedAt, ReportedAt: r.ReportedAt}
 		if r.Recipient != nil {
 			rr.Email = r.Recipient.Email
 			rr.FirstName = r.Recipient.FirstName
@@ -113,7 +113,7 @@ func (h *Handler) ExportCampaignCSV(c *gin.Context) {
 	w := csv.NewWriter(c.Writer)
 	w.Write([]string{"email", "last_name", "first_name", "department", "status", "sent_at", "opened_at", "clicked_at", "downloaded_at", "submitted_at", "reported_at"})
 	for _, r := range results {
-		row := []string{"", "", "", "", r.Status, fmtTime(r.SentAt), fmtTime(r.OpenedAt), fmtTime(r.ClickedAt), fmtTime(r.DownloadedAt), fmtTime(r.SubmittedAt), fmtTime(r.ReportedAt)}
+		row := []string{"", "", "", "", bestStatus(r), fmtTime(r.SentAt), fmtTime(r.OpenedAt), fmtTime(r.ClickedAt), fmtTime(r.DownloadedAt), fmtTime(r.SubmittedAt), fmtTime(r.ReportedAt)}
 		if r.Recipient != nil {
 			row[0] = r.Recipient.Email
 			row[1] = r.Recipient.LastName
@@ -258,8 +258,14 @@ func bestStatus(r model.Result) string {
 	if r.SubmittedAt != nil {
 		return "submitted"
 	}
+	if r.DownloadedAt != nil {
+		return "downloaded"
+	}
 	if r.ClickedAt != nil {
 		return "clicked"
+	}
+	if r.ReportedAt != nil {
+		return "reported"
 	}
 	if r.OpenedAt != nil {
 		return "opened"

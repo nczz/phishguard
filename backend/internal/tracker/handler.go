@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -63,6 +64,7 @@ func (h *Handler) HandleOpen(c *gin.Context) {
 
 	now := time.Now()
 	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
+	updateResultStatus(h.DB, result.ID, model.EventOpened)
 	recordEvent(h.DB, result.ID, result.CampaignID, model.EventOpened, c.Request, nil)
 
 	c.Header("Cache-Control", "no-store")
@@ -79,6 +81,7 @@ func (h *Handler) HandleClick(c *gin.Context) {
 	now := time.Now()
 	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
 	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
+	updateResultStatus(h.DB, result.ID, model.EventClicked)
 	recordEvent(h.DB, result.ID, result.CampaignID, model.EventClicked, c.Request, nil)
 
 	// Build landing URL from campaign's phish_url
@@ -100,6 +103,7 @@ func (h *Handler) HandleDownload(c *gin.Context) {
 	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
 	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
 	h.DB.Model(&result).Where("downloaded_at IS NULL").Update("downloaded_at", now)
+	updateResultStatus(h.DB, result.ID, model.EventDownloaded)
 	recordEvent(h.DB, result.ID, result.CampaignID, model.EventDownloaded, c.Request, map[string]interface{}{
 		"filename": c.Param("filename"),
 	})
@@ -127,6 +131,7 @@ func (h *Handler) HandleSubmit(c *gin.Context) {
 	h.DB.Model(&result).Where("opened_at IS NULL").Update("opened_at", now)
 	h.DB.Model(&result).Where("clicked_at IS NULL").Update("clicked_at", now)
 	h.DB.Model(&result).Where("submitted_at IS NULL").Update("submitted_at", now)
+	updateResultStatus(h.DB, result.ID, model.EventSubmitted)
 
 	// Record field names only (not values)
 	_ = c.Request.ParseForm()
@@ -160,16 +165,17 @@ func (h *Handler) HandleReport(c *gin.Context) {
 
 	now := time.Now()
 	h.DB.Model(&result).Where("reported_at IS NULL").Update("reported_at", now)
+	updateResultStatus(h.DB, result.ID, model.EventReported)
 	recordEvent(h.DB, result.ID, result.CampaignID, model.EventReported, c.Request, nil)
 
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>舉報成功</title>
+	serveHTML(c, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>舉報成功</title>
 <style>body{font-family:-apple-system,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f0f2f5;margin:0}
 .card{background:#fff;padding:48px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;max-width:480px}
 h1{color:#52c41a;margin-bottom:16px}p{color:#666;line-height:1.8}</style></head>
 <body><div class="card"><h1>✅ 感謝您的舉報！</h1>
 <p>您已成功舉報這封可疑信件。<br>這是公司資安團隊發送的<strong>釣魚模擬測試</strong>。</p>
 <p>您的警覺性非常好！能夠辨識並舉報可疑信件，是保護公司資安的重要行為。</p>
-<p style="color:#999;font-size:13px;margin-top:24px;">本測試由 PhishGuard 釣魚模擬平台提供</p></div></body></html>`))
+<p style="color:#999;font-size:13px;margin-top:24px;">本測試由 PhishGuard 釣魚模擬平台提供</p></div></body></html>`)
 }
 
 func (h *Handler) HandleLanding(c *gin.Context) {
@@ -232,8 +238,43 @@ func recordEvent(db *gorm.DB, resultID, campaignID int64, eventType string, r *h
 		ResultID:   resultID,
 		CampaignID: campaignID,
 		EventType:  eventType,
-		IPAddress:  r.RemoteAddr,
+		IPAddress:  clientIP(r),
 		UserAgent:  r.UserAgent(),
 		Detail:     detailStr,
 	})
+}
+
+func updateResultStatus(db *gorm.DB, resultID int64, next string) {
+	rank := map[string]int{
+		model.CampaignStatusScheduled: 0,
+		model.ResultStatusSending:     1,
+		model.EventSent:               2,
+		model.EventOpened:             3,
+		model.EventReported:           4,
+		model.EventClicked:            5,
+		model.EventDownloaded:         6,
+		model.EventSubmitted:          7,
+		model.EventError:              100,
+	}
+	var result model.Result
+	if err := db.Select("id", "status").First(&result, resultID).Error; err != nil {
+		return
+	}
+	if rank[next] > rank[result.Status] {
+		db.Model(&result).Update("status", next)
+	}
+}
+
+func clientIP(r *http.Request) string {
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		return strings.TrimSpace(strings.Split(forwarded, ",")[0])
+	}
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+		return realIP
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		return host
+	}
+	return r.RemoteAddr
 }

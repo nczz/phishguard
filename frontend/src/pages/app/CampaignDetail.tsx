@@ -19,7 +19,7 @@ const STATUS_COLOR: Record<string, string> = {
 const FUNNEL_COLORS = ['#1677ff', '#13c2c2', '#faad14', '#ff4d4f', '#52c41a'];
 
 const RECIPIENT_STATUS_COLOR: Record<string, string> = {
-  sent: 'blue', opened: 'cyan', clicked: 'orange', submitted: 'red', reported: 'green',
+  sent: 'blue', opened: 'cyan', clicked: 'orange', downloaded: 'volcano', submitted: 'red', reported: 'green',
 };
 
 function rateColor(rate: number) {
@@ -147,6 +147,7 @@ export default function CampaignDetail() {
     { title: '寄達', key: 'sent_at', width: 90, render: (_, r) => fmt(r.sent_at) },
     { title: '開信', key: 'opened_at', width: 90, render: (_, r) => fmt(r.opened_at) },
     { title: '點擊', key: 'clicked_at', width: 90, render: (_, r) => fmt(r.clicked_at) },
+    { title: '下載', key: 'downloaded_at', width: 90, render: (_, r) => fmt(r.downloaded_at) },
     { title: '提交', key: 'submitted_at', width: 90, render: (_, r) => fmt(r.submitted_at) },
     { title: '舉報', key: 'reported_at', width: 90, render: (_, r) => fmt(r.reported_at) },
     { title: '錯誤原因', key: 'error_detail', width: 180, ellipsis: { showTitle: false },

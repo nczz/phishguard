@@ -139,6 +139,7 @@ export interface RecipientResult {
   sent_at: string | null;
   opened_at: string | null;
   clicked_at: string | null;
+  downloaded_at: string | null;
   submitted_at: string | null;
   reported_at: string | null;
 }
