@@ -63,9 +63,9 @@ func (h *Handler) StopCampaign(c *gin.Context) {
 		return
 	}
 
-	// Mark remaining scheduled results as cancelled
+	// Mark remaining unsent results as cancelled, including rows already claimed by a worker.
 	h.DB.Model(&model.Result{}).
-		Where("campaign_id = ? AND status = ?", id, "scheduled").
+		Where("campaign_id = ? AND status IN ? AND sent_at IS NULL", id, []string{"scheduled", model.ResultStatusSending}).
 		Updates(map[string]interface{}{"status": "cancelled", "error_detail": "活動已被手動終止"})
 
 	now := time.Now()
@@ -73,7 +73,7 @@ func (h *Handler) StopCampaign(c *gin.Context) {
 
 	// Count what happened
 	var sent, cancelled int64
-	h.DB.Model(&model.Result{}).Where("campaign_id = ? AND status = ?", id, "sent").Count(&sent)
+	h.DB.Model(&model.Result{}).Where("campaign_id = ? AND sent_at IS NOT NULL", id).Count(&sent)
 	h.DB.Model(&model.Result{}).Where("campaign_id = ? AND status = ?", id, "cancelled").Count(&cancelled)
 
 	c.JSON(http.StatusOK, gin.H{

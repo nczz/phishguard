@@ -171,6 +171,28 @@ func processCampaign(database *gorm.DB, cfg *config.Config, resultRepo *repo.Res
 			continue
 		}
 
+		var current model.Campaign
+		if err := database.Select("status").First(&current, campaign.ID).Error; err != nil {
+			log.Printf("campaign %d: status check failed: %v", campaign.ID, err)
+			database.Model(r).Update("status", "scheduled")
+			continue
+		}
+		if current.Status == "paused" {
+			database.Model(r).Update("status", "scheduled")
+			continue
+		}
+		if current.Status == "stopped" {
+			database.Model(r).Select("status", "error_detail").Updates(model.Result{
+				Status:      "cancelled",
+				ErrorDetail: "活動已被手動終止",
+			})
+			continue
+		}
+		if current.Status != model.CampaignStatusSending {
+			database.Model(r).Update("status", "scheduled")
+			continue
+		}
+
 		// Check domain rate limit
 		recipientDomain := extractDomain(r.Recipient.Email)
 		if !rl.Wait(recipientDomain) {
