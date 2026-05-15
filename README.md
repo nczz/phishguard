@@ -19,10 +19,10 @@
 
 | 層級 | 技術 |
 |------|------|
-| Backend | Go 1.22+, Gin, GORM v2 |
+| Backend | Go 1.25+, Gin, GORM v2 |
 | Database | MySQL 8.0+ |
 | Queue | Redis 7+ |
-| Frontend | TypeScript, React 19, Vite, Ant Design 6 |
+| Frontend | TypeScript, React 19, Vite, React Router 7, Ant Design 6 |
 | Charts | Recharts |
 | Mail | SMTP / Mailgun API / AWS SES |
 | Container | Docker, Docker Compose |

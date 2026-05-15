@@ -81,7 +81,8 @@ func (r *ResultRepo) FindRecentByRecipientEmail(tenantID int64, email string, da
 	var results []model.Result
 	since := time.Now().AddDate(0, 0, -days)
 	err := r.DB.Joins("JOIN recipients rec ON rec.id = results.recipient_id").
-		Where("results.tenant_id = ? AND rec.email = ? AND results.created_at >= ?", tenantID, email, since).
+		Joins("JOIN campaigns c ON c.id = results.campaign_id").
+		Where("results.tenant_id = ? AND rec.email = ? AND COALESCE(results.sent_at, c.launched_at, c.created_at) >= ?", tenantID, email, since).
 		Find(&results).Error
 	return results, err
 }

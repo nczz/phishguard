@@ -47,7 +47,7 @@ export interface Scenario {
   tenant_id: string;
   name: string;
   category: string;
-  difficulty: string;
+  difficulty: number | string;
   language: string;
   template_id: string;
   page_id: string;

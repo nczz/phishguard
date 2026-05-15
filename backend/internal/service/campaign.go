@@ -14,11 +14,11 @@ import (
 )
 
 type CreateCampaignRequest struct {
-	Name          string `json:"name"`
-	ScenarioID    *int64 `json:"scenario_id"`
-	TemplateID    *int64 `json:"template_id"`
-	PageID        *int64 `json:"page_id"`
-	SMTPProfileID int64  `json:"smtp_profile_id"`
+	Name          string   `json:"name"`
+	ScenarioID    *int64   `json:"scenario_id"`
+	TemplateID    *int64   `json:"template_id"`
+	PageID        *int64   `json:"page_id"`
+	SMTPProfileID int64    `json:"smtp_profile_id"`
 	GroupIDs      []int64  `json:"group_ids"`
 	PhishURL      string   `json:"phish_url"`
 	SelectionMode string   `json:"selection_mode"`
@@ -27,9 +27,9 @@ type CreateCampaignRequest struct {
 
 	// Schedule
 	SendMode         string `json:"send_mode"`          // immediate / scheduled
-	ScheduleStart    string `json:"schedule_start"`      // RFC3339, empty = now
-	ScheduleEnd      string `json:"schedule_end"`        // RFC3339, required for scheduled
-	WorkingHoursOnly bool   `json:"working_hours_only"`  // 09:00-17:00 only
+	ScheduleStart    string `json:"schedule_start"`     // RFC3339, empty = now
+	ScheduleEnd      string `json:"schedule_end"`       // RFC3339, required for scheduled
+	WorkingHoursOnly bool   `json:"working_hours_only"` // 09:00-17:00 only
 	SkipWeekends     bool   `json:"skip_weekends"`
 	Timezone         string `json:"timezone"` // e.g. "Asia/Taipei"
 }
@@ -42,10 +42,33 @@ type CampaignService struct {
 }
 
 func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequest) (*model.Campaign, error) {
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, fmt.Errorf("campaign name is required")
+	}
+	if req.SMTPProfileID == 0 {
+		return nil, fmt.Errorf("smtp profile is required")
+	}
+	var smtpProfile model.SMTPProfile
+	if err := s.CampaignRepo.DB.Where("tenant_id = ? AND id = ?", tenantID, req.SMTPProfileID).First(&smtpProfile).Error; err != nil {
+		return nil, fmt.Errorf("smtp profile lookup: %w", err)
+	}
+
 	templateID := req.TemplateID
 	pageID := req.PageID
 
-	if req.ScenarioID != nil {
+	if req.ScenarioID == nil {
+		scenarios, err := s.ScenarioRepo.FindActiveByTenant(tenantID)
+		if err != nil {
+			return nil, fmt.Errorf("scenario lookup: %w", err)
+		}
+		if len(scenarios) == 0 {
+			return nil, fmt.Errorf("no active scenario available")
+		}
+		sc := scenarios[rand.Intn(len(scenarios))]
+		req.ScenarioID = &sc.ID
+		templateID = sc.TemplateID
+		pageID = sc.PageID
+	} else {
 		sc, err := s.ScenarioRepo.FindByID(tenantID, *req.ScenarioID)
 		if err != nil {
 			return nil, fmt.Errorf("scenario lookup: %w", err)
@@ -53,21 +76,41 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 		templateID = sc.TemplateID
 		pageID = sc.PageID
 	}
+	if templateID == nil {
+		return nil, fmt.Errorf("scenario has no email template")
+	}
 
 	// Parse schedule
 	var schedStart *time.Time
 	if req.ScheduleStart != "" {
-		t, _ := time.Parse(time.RFC3339, req.ScheduleStart)
+		t, err := time.Parse(time.RFC3339, req.ScheduleStart)
+		if err != nil {
+			return nil, fmt.Errorf("invalid schedule_start: %w", err)
+		}
 		if !t.IsZero() {
 			schedStart = &t
 		}
 	}
 	var sendBy *time.Time
 	if req.ScheduleEnd != "" {
-		t, _ := time.Parse(time.RFC3339, req.ScheduleEnd)
+		t, err := time.Parse(time.RFC3339, req.ScheduleEnd)
+		if err != nil {
+			return nil, fmt.Errorf("invalid schedule_end: %w", err)
+		}
 		if !t.IsZero() {
 			sendBy = &t
 		}
+	}
+	if sendBy != nil && schedStart != nil && !sendBy.After(*schedStart) {
+		return nil, fmt.Errorf("schedule_end must be after schedule_start")
+	}
+
+	trackerBaseURL := os.Getenv("TRACKER_BASE_URL")
+	if trackerBaseURL == "" {
+		trackerBaseURL = strings.TrimSpace(req.PhishURL)
+	}
+	if trackerBaseURL == "" {
+		trackerBaseURL = "http://localhost:8090"
 	}
 
 	c := &model.Campaign{
@@ -78,7 +121,7 @@ func (s *CampaignService) CreateCampaign(tenantID int64, req *CreateCampaignRequ
 		TemplateID:       templateID,
 		PageID:           pageID,
 		SMTPProfileID:    req.SMTPProfileID,
-		PhishURL:         os.Getenv("TRACKER_BASE_URL"),
+		PhishURL:         trackerBaseURL,
 		SendBy:           sendBy,
 		ScheduleStart:    schedStart,
 		WorkingHoursOnly: req.WorkingHoursOnly,
@@ -178,6 +221,17 @@ func (s *CampaignService) LaunchCampaign(tenantID, campaignID int64, skipCooldow
 
 	if len(recipients) == 0 {
 		return fmt.Errorf("no recipients selected")
+	}
+
+	var tenant model.Tenant
+	if err := s.CampaignRepo.DB.First(&tenant, tenantID).Error; err == nil {
+		limits := GetEffectiveLimits(&tenant)
+		if limits.MaxEmailsPerMonth > 0 {
+			sent, _ := s.ResultRepo.CountSentThisMonth(tenantID)
+			if sent+int64(len(recipients)) > int64(limits.MaxEmailsPerMonth) {
+				return fmt.Errorf("本月發信量將超過上限 (%d 封)，已發送 %d 封，本次需發送 %d 封。請升級方案或聯繫管理員。", limits.MaxEmailsPerMonth, sent, len(recipients))
+			}
+		}
 	}
 
 	// Build results with scheduled send dates

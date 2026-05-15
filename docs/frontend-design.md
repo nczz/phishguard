@@ -11,9 +11,9 @@
 
 | 項目 | 選擇 | 理由 |
 |------|------|------|
-| UI 框架 | Ant Design 5 | Table/Form/Steps/Card 元件完整，適合後台 |
+| UI 框架 | Ant Design 6 | Table/Form/Steps/Card 元件完整，適合後台 |
 | 圖表 | Recharts | 輕量、React 原生、漏斗圖支援好 |
-| 路由 | React Router 6 | 標準選擇 |
+| 路由 | React Router 7 | 標準選擇 |
 | HTTP | Axios | 攔截器方便處理 JWT 和錯誤 |
 | 狀態 | React Context + hooks | 規模不需要 Redux |
 

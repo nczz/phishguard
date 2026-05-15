@@ -26,8 +26,8 @@ function categoryIcon(cat: string) {
   return CATEGORY_ICON[cat] ?? '📧';
 }
 
-function difficultyStars(d: string) {
-  const n = parseInt(d, 10) || 1;
+function difficultyStars(d: number | string) {
+  const n = parseInt(String(d), 10) || 1;
   return '⭐'.repeat(n);
 }
 
@@ -104,18 +104,30 @@ export default function CampaignWizard() {
 
   const scenarioObj = scenarios.find(s => s.id === selectedScenario);
   const smtpProfile = smtpProfiles[0] ?? null;
+  const trimmedCampaignName = campaignName.trim();
+  const scheduleInvalid = sendMode === 'scheduled' && (
+    !scheduleStart || !scheduleEnd || !dayjs(scheduleEnd).isAfter(dayjs(scheduleStart))
+  );
 
   const canNext = (s: number) => {
-    if (s === 0) return autoRandom || !!selectedScenario;
-    if (s === 1) return selectedGroups.length > 0 && (selectionMode === 'individual' ? selectedRecipientIds.length > 0 : selectionMode !== 'department' || departments.length > 0);
+    if (s === 0) return (autoRandom && scenarios.length > 0) || !!selectedScenario;
+    if (s === 1) {
+      return selectedGroups.length > 0
+        && estimatedCount > 0
+        && !scheduleInvalid
+        && (selectionMode === 'individual' ? selectedRecipientIds.length > 0 : selectionMode !== 'department' || departments.length > 0);
+    }
     return true;
   };
 
+  const canSubmit = !!smtpProfile && trimmedCampaignName.length > 0 && estimatedCount > 0 && !scheduleInvalid;
+
   async function handleSubmit() {
+    if (!canSubmit) return;
     setSubmitting(true);
     try {
       const campaign = await api.post<Campaign>('/campaigns', {
-        name: campaignName,
+        name: trimmedCampaignName,
         scenario_id: autoRandom ? null : selectedScenario,
         smtp_profile_id: smtpProfile?.id,
         group_ids: selectedGroups.map(Number),
@@ -188,6 +200,9 @@ export default function CampaignWizard() {
               ))}
             </Row>
           )}
+          {autoRandom && scenarios.length === 0 && (
+            <Alert type="warning" showIcon message="目前沒有可用情境，請先建立或匯入情境。" />
+          )}
         </>
       )}
 
@@ -219,17 +234,21 @@ export default function CampaignWizard() {
           </Checkbox>
 
           {selectionMode === 'department' && (
-            <Checkbox.Group
-              value={departments}
-              onChange={v => setDepartments(v as string[])}
-              style={{ display: 'block', marginBottom: 16, paddingLeft: 24 }}
-            >
-              <Space orientation="vertical">
-                {allDepartments.map(d => (
-                  <Checkbox key={d} value={d}>{d}</Checkbox>
-                ))}
-              </Space>
-            </Checkbox.Group>
+            allDepartments.length > 0 ? (
+              <Checkbox.Group
+                value={departments}
+                onChange={v => setDepartments(v as string[])}
+                style={{ display: 'block', marginBottom: 16, paddingLeft: 24 }}
+              >
+                <Space direction="vertical">
+                  {allDepartments.map(d => (
+                    <Checkbox key={d} value={d}>{d}</Checkbox>
+                  ))}
+                </Space>
+              </Checkbox.Group>
+            ) : (
+              <Alert type="warning" showIcon message="所選群組沒有部門資料，請改用全部發送或手動挑選。" style={{ marginBottom: 16 }} />
+            )
           )}
 
           {selectionMode === 'sample' && (
@@ -305,6 +324,14 @@ export default function CampaignWizard() {
                     onChange={v => setScheduleEnd(v ? v.toISOString() : '')}
                     style={{ marginLeft: 8 }} />
                 </div>
+                {scheduleInvalid && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="請選擇有效的排程時間，結束時間必須晚於開始時間。"
+                    style={{ marginTop: 8, marginBottom: 8 }}
+                  />
+                )}
               </div>
             )}
 
@@ -343,6 +370,7 @@ export default function CampaignWizard() {
                 {selectionMode === 'all' && `全公司 ${estimatedCount} 人`}
                 {selectionMode === 'department' && `指定部門（${departments.join('、')}）${estimatedCount} 人`}
                 {selectionMode === 'sample' && `隨機抽樣 ${samplePercent}%（約 ${estimatedCount} 人）`}
+                {selectionMode === 'individual' && `手動挑選 ${estimatedCount} 人`}
               </Descriptions.Item>
               <Descriptions.Item label="發送方式">
                 {sendMode === 'scheduled' ? `排程發送 (${scheduleStart ? new Date(scheduleStart).toLocaleString('zh-TW') : '?'} ~ ${scheduleEnd ? new Date(scheduleEnd).toLocaleString('zh-TW') : '?'})` : '立即發送'}
@@ -372,9 +400,12 @@ export default function CampaignWizard() {
             <Input
               value={campaignName}
               onChange={e => setCampaignName(e.target.value)}
+              status={trimmedCampaignName ? undefined : 'error'}
               style={{ width: 300 }}
             />
           </div>
+
+          {!trimmedCampaignName && <Alert type="warning" showIcon message="請輸入測試名稱。" style={{ marginBottom: 16 }} />}
 
           {scenarioObj?.template?.html_body && (
             <>
@@ -444,7 +475,7 @@ export default function CampaignWizard() {
               size="large"
               icon={<RocketOutlined />}
               loading={submitting}
-              disabled={!smtpProfile}
+              disabled={!canSubmit}
               onClick={handleSubmit}
             >
               🚀 確認發送
