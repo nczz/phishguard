@@ -2,7 +2,9 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, Spin } from 'antd';
 import zhTW from 'antd/locale/zh_TW';
-import { AuthProvider, ProtectedRoute, useAuth } from './hooks/useAuth';
+import { AuthProvider } from './hooks/AuthProvider';
+import { useAuth } from './hooks/useAuth';
+import { ProtectedRoute } from './hooks/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import TenantLayout from './layouts/TenantLayout';
 

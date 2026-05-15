@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, Table, Tag, Button, Modal, Form, Input, InputNumber, Radio, Checkbox, Space, Popconfirm, message, Progress, Alert, Row, Col, Typography, Select } from 'antd';
 import { PlusOutlined, SafetyCertificateOutlined, CheckCircleOutlined, WarningOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import FieldHelp, { tips } from '../../components/FieldHelp';
+import FieldHelp from '../../components/FieldHelp';
+import { tips } from '../../components/fieldTips';
 import { api } from '../../api/client';
 import type { SMTPProfile } from '../../api/client';
 

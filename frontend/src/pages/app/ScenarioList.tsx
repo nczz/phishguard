@@ -3,7 +3,8 @@ import { Card, Row, Col, Tag, Badge, Empty, Spin, Typography, Button, Drawer, Fo
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
-import FieldHelp, { tips } from '../../components/FieldHelp';
+import FieldHelp from '../../components/FieldHelp';
+import { tips } from '../../components/fieldTips';
 import type { Scenario, EmailTemplate, LandingPage } from '../../api/client';
 
 const categoryEmoji: Record<string, string> = {

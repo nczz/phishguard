@@ -3,7 +3,8 @@ import { Card, Table, Button, Drawer, Form, Input, Switch, message, Tag, Popconf
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
-import FieldHelp, { tips } from '../../components/FieldHelp';
+import FieldHelp from '../../components/FieldHelp';
+import { tips } from '../../components/fieldTips';
 import type { LandingPage } from '../../api/client';
 
 export default function PageList() {

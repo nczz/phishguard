@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card, Table, Button, Modal, Upload, Tag, message, Row, Col, Statistic, Select, Typography, Empty, Space, Popconfirm, Form, Input, Tooltip, Alert, Checkbox } from 'antd';
 import { UploadOutlined, DownloadOutlined, TeamOutlined, InboxOutlined, ExportOutlined, EditOutlined, DeleteOutlined, QuestionCircleOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
-import { tips } from '../../components/FieldHelp';
+import { tips } from '../../components/fieldTips';
 import { api } from '../../api/client';
 import type { RecipientGroup, Recipient } from '../../api/client';
 

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, Table, Tag, Button, Drawer, Form, Input, Select, Popconfirm, Space, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
-import FieldHelp, { tips } from '../../components/FieldHelp';
+import FieldHelp from '../../components/FieldHelp';
+import { tips } from '../../components/fieldTips';
 import type { EmailTemplate } from '../../api/client';
 
 const categories = ['credential', 'malware', 'social', 'compliance', 'custom'];

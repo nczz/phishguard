@@ -6,7 +6,7 @@ import {
 } from 'antd';
 import { RocketOutlined, EyeOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { tips } from '../../components/FieldHelp';
+import { tips } from '../../components/fieldTips';
 import type { Scenario, RecipientGroup, SMTPProfile, Campaign } from '../../api/client';
 import { api, getErrorMessage } from '../../api/client';
 
